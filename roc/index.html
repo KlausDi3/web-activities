@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The ROC Curve &amp; Classification Metrics</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:   #1b2a4a;
+  --blue:   #2e86c1;
+  --teal:   #16a085;
+  --orange: #e67e22;
+  --red:    #e74c3c;
+  --green:  #27ae60;
+  --purple: #8e44ad;
+  --light:  #f4f7fb;
+  --mid:    #dce6f0;
+  --gray:   #4a4a5a;
+  --serif:  'Source Serif 4', Georgia, serif;
+  --sans:   'Lato', sans-serif;
+}
+html, body {
+  font-family: var(--sans); background: #f0f4f8; color: var(--navy);
+}
+
+/* ── Top bar ── */
+.topbar {
+  height: 46px; background: var(--navy);
+  display: flex; align-items: center; padding: 0 40px; gap: 20px;
+}
+.topbar-brand { font-family: var(--serif); font-weight: 300; font-size: .95rem; color: rgba(255,255,255,.9); letter-spacing: .04em; }
+.topbar-sep   { width: 1px; height: 18px; background: rgba(255,255,255,.22); }
+.topbar-sub   { font-size: .73rem; color: rgba(255,255,255,.5); letter-spacing: .08em; text-transform: uppercase; }
+
+/* ── Centered wrapper ── */
+.wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 80px 48px;
+}
+
+/* ── Header row ── */
+.page-header {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 14px;
+}
+.page-title {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--navy);
+}
+.page-title em { font-style: italic; color: var(--red); }
+
+/* ── Slider card ── */
+.slider-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 22px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+.slider-label-wrap { display: flex; flex-direction: column; gap: 2px; min-width: 180px; }
+.slider-name  { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gray); }
+.slider-val   { font-size: 1.1rem; font-weight: 700; font-family: 'Courier New', monospace; color: var(--orange); line-height: 1; }
+.slider-wrap  { flex: 1; }
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 4px; border-radius: 2px; outline: none; cursor: pointer;
+  background: linear-gradient(to right, var(--orange) 0%, var(--orange) var(--pct,50%), var(--mid) var(--pct,50%));
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: white; border: 2.5px solid var(--orange);
+  box-shadow: 0 2px 6px rgba(0,0,0,.2); transition: transform .15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+
+.btn-animate, .btn-reset {
+  flex-shrink: 0;
+  border: none; border-radius: 8px; cursor: pointer;
+  font-family: var(--sans); font-size: .8rem; font-weight: 700;
+  padding: 8px 18px; letter-spacing: .04em;
+  transition: opacity .15s, transform .1s;
+}
+.btn-animate:hover, .btn-reset:hover { opacity: .85; transform: translateY(-1px); }
+.btn-animate:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-animate { background: var(--blue);   color: #fff; }
+.btn-reset   { background: var(--light);  color: var(--navy); border: 1.5px solid var(--mid); }
+
+/* ── 3-column grid ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  grid-template-rows: 420px;
+  gap: 14px;
+  align-items: stretch;
+}
+
+/* ── Card ── */
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px 18px 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  display: flex;
+  flex-direction: column;
+}
+.card-title {
+  font-size: .82rem; letter-spacing: .10em; text-transform: uppercase;
+  color: var(--gray); font-weight: 700; margin-bottom: 10px;
+}
+
+/* ── ROC canvas ── */
+#c-roc  { display: block; width: 100%; flex: 1; }
+
+/* ── Formula box ── */
+.formula-box {
+  flex: 1; display: flex; flex-direction: column; justify-content: space-around;
+  padding: 2px 0; gap: 5px; overflow: hidden;
+}
+.fm-row {
+  background: var(--light); border-radius: 7px;
+  padding: 6px 10px; display: flex; flex-direction: column; gap: 3px;
+}
+.fm-name {
+  font-size: .72rem; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--gray);
+}
+.fm-formula {
+  font-size: .78rem;
+  color: var(--gray);
+}
+.fm-computed {
+  font-size: .82rem; color: var(--gray);
+  display: flex; align-items: baseline; gap: 6px;
+}
+.fm-subst { color: var(--gray); }
+.fm-result { font-size: .82rem; color: var(--gray); }
+
+.auc-badge {
+  display: inline-block; margin-top: 8px;
+  padding: 3px 12px; background: var(--light); border-radius: 20px;
+  font-size: .78rem; color: var(--navy);
+}
+.auc-badge strong { color: var(--blue); font-family: 'Courier New', monospace; }
+
+/* ── Confusion matrix ── */
+.cm-outer { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; flex: 1; justify-content: center; }
+.cm-header-row { display: flex; padding-left: 60px; gap: 4px; }
+.cm-col-label { flex: 1; text-align: center; font-size: .82rem; color: var(--gray); letter-spacing: .04em; text-transform: uppercase; padding-bottom: 3px; line-height: 1.3; }
+.cm-row-wrap  { display: flex; gap: 4px; align-items: stretch; }
+.cm-row-label { width: 70px; text-align: right; padding-right: 8px; font-size: .78rem; color: var(--gray); letter-spacing: .03em; text-transform: uppercase; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; line-height: 1.3; }
+.cm-block {
+  flex: 1; border-radius: 7px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 14px 4px;
+}
+.cm-count { font-size: 2.4rem; font-weight: 700; font-family: 'Courier New', monospace; }
+.cm-tag   { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; margin-top: 3px; opacity: .8; }
+.tp-b { background: rgba(39,174,96,.12);  } .tp-b .cm-count { color: var(--green); }  .tp-b .cm-tag { color: var(--green); }
+.fp-b { background: rgba(231,76,60,.10);  } .fp-b .cm-count { color: var(--red); }    .fp-b .cm-tag { color: var(--red); }
+.fn-b { background: rgba(230,126,34,.10); } .fn-b .cm-count { color: var(--orange); } .fn-b .cm-tag { color: var(--orange); }
+.tn-b { background: rgba(142,68,173,.08); } .tn-b .cm-count { color: var(--purple); } .tn-b .cm-tag { color: var(--purple); }
+
+/* ── Patient strip card ── */
+.patient-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 18px 8px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  margin-bottom: 12px;
+}
+#c-patients { display: block; width: 100%; height: 190px; }
+
+/* ── Section label ── */
+.section-label {
+  font-size: .72rem; font-weight: 700; letter-spacing: .10em;
+  text-transform: uppercase; color: var(--gray);
+  margin-top: 22px; margin-bottom: 10px;
+}
+
+/* ── Model comparison grid ── */
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+.model-canvas {
+  display: block; width: 100%; height: 220px;
+}
+.model-auc {
+  margin-top: 5px; text-align: center;
+  font-size: .80rem; color: var(--gray);
+}
+.model-auc strong {
+  color: var(--navy); font-family: 'Courier New', monospace; font-size: .88rem;
+}
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <span class="topbar-brand">A Visual Introduction to Machine Learning</span>
+  <span class="topbar-sep"></span>
+  <span class="topbar-sub">Chapter 4 · The ROC Curve</span>
+</nav>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1 class="page-title">The ROC Curve &amp; Classification Metrics</h1>
+  </div>
+
+  <!-- Controls row -->
+  <div class="slider-card">
+    <div class="slider-label-wrap">
+      <span class="slider-name">Classification Threshold</span>
+      <span class="slider-val" id="lbl-t">0.50</span>
+    </div>
+    <div class="slider-wrap">
+      <input type="range" id="sl-t" min="0" max="1" step="0.005" value="0.5">
+    </div>
+    <button class="btn-animate" id="btn-animate">▶ Animate</button>
+    <button class="btn-reset"   id="btn-reset">↺ Reset</button>
+  </div>
+
+  <!-- Patient strip -->
+  <div class="patient-card">
+    <div class="card-title">20-Patient Case Study — AI Risk Scores</div>
+    <canvas id="c-patients"></canvas>
+  </div>
+
+  <!-- 3 charts -->
+  <div class="charts-grid">
+
+    <!-- ROC curve -->
+    <div class="card">
+      <div class="card-title">ROC Curve</div>
+      <canvas id="c-roc"></canvas>
+      <div class="auc-badge">AUC = <strong id="auc-val">—</strong>
+        <span style="font-weight:400;color:var(--gray);margin-left:6px;font-size:.72rem;">orange dot = operating point</span>
+      </div>
+    </div>
+
+    <!-- Confusion matrix -->
+    <div class="card">
+      <div class="card-title">Confusion Matrix</div>
+      <div class="cm-outer">
+        <div class="cm-header-row">
+          <div class="cm-col-label">Predicted<br>Negative</div>
+          <div class="cm-col-label">Predicted<br>Positive</div>
+        </div>
+        <div class="cm-row-wrap">
+          <div class="cm-row-label">Actual<br>Negative</div>
+          <div class="cm-block tn-b"><div class="cm-count" id="cm-tn">—</div><div class="cm-tag">True Negative</div></div>
+          <div class="cm-block fp-b"><div class="cm-count" id="cm-fp">—</div><div class="cm-tag">False Positive</div></div>
+        </div>
+        <div class="cm-row-wrap">
+          <div class="cm-row-label">Actual<br>Positive</div>
+          <div class="cm-block fn-b"><div class="cm-count" id="cm-fn">—</div><div class="cm-tag">False Negative</div></div>
+          <div class="cm-block tp-b"><div class="cm-count" id="cm-tp">—</div><div class="cm-tag">True Positive</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics formulas -->
+    <div class="card">
+      <div class="card-title">Metric Formulas</div>
+      <div class="formula-box" id="formula-box">
+        <div class="fm-row">
+          <div class="fm-name">Accuracy</div>
+          <div class="fm-formula">= (TP + TN) / N</div>
+          <div class="fm-computed">
+            <span class="fm-subst" id="fv-acc-sub">—</span>
+            <span class="fm-result" id="fv-acc">—</span>
+          </div>
+        </div>
+        <div class="fm-row">
+          <div class="fm-name">Precision</div>
+          <div class="fm-formula">= TP / (TP + FP)</div>
+          <div class="fm-computed">
+            <span class="fm-subst" id="fv-prec-sub">—</span>
+            <span class="fm-result" id="fv-prec">—</span>
+          </div>
+        </div>
+        <div class="fm-row">
+          <div class="fm-name">Recall / TPR</div>
+          <div class="fm-formula">= TP / (TP + FN)</div>
+          <div class="fm-computed">
+            <span class="fm-subst" id="fv-rec-sub">—</span>
+            <span class="fm-result" id="fv-rec">—</span>
+          </div>
+        </div>
+        <div class="fm-row">
+          <div class="fm-name">F1 Score</div>
+          <div class="fm-formula">= 2×Prec×Rec / (Prec + Rec)</div>
+          <div class="fm-computed">
+            <span class="fm-subst" id="fv-f1-sub">—</span>
+            <span class="fm-result" id="fv-f1">—</span>
+          </div>
+        </div>
+        <div class="fm-row">
+          <div class="fm-name">FPR</div>
+          <div class="fm-formula">= FP / (FP + TN)</div>
+          <div class="fm-computed">
+            <span class="fm-subst" id="fv-fpr-sub">—</span>
+            <span class="fm-result" id="fv-fpr">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Model comparison row -->
+  <div class="section-label">ROC Curve Comparison: Model Performance</div>
+  <div class="model-grid">
+    <div class="card">
+      <div class="card-title">Pure Random Model</div>
+      <canvas class="model-canvas" id="mc-random"></canvas>
+      <div class="model-auc">AUC = <strong id="mc-random-auc">—</strong></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Good Model</div>
+      <canvas class="model-canvas" id="mc-good"></canvas>
+      <div class="model-auc">AUC = <strong id="mc-good-auc">—</strong></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Better Model</div>
+      <canvas class="model-canvas" id="mc-better"></canvas>
+      <div class="model-auc">AUC = <strong id="mc-better-auc">—</strong></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Perfect Model</div>
+      <canvas class="model-canvas" id="mc-perfect"></canvas>
+      <div class="model-auc">AUC = <strong id="mc-perfect-auc">—</strong></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Fixed 20-patient dataset (single source of truth) ────
+const gordPatients = [
+  // Non-Cancer (GT=0) — 12 patients
+  {label:0,score:0.05},{label:0,score:0.09},{label:0,score:0.14},
+  {label:0,score:0.19},{label:0,score:0.24},{label:0,score:0.29},
+  {label:0,score:0.34},{label:0,score:0.42},{label:0,score:0.52},
+  {label:0,score:0.61},{label:0,score:0.69},{label:0,score:0.76},
+  // Cancer (GT=1) — 8 patients
+  {label:1,score:0.33},{label:1,score:0.44},
+  {label:1,score:0.55},{label:1,score:0.63},
+  {label:1,score:0.71},{label:1,score:0.80},
+  {label:1,score:0.87},{label:1,score:0.94},
+];
+
+// ── Metrics ──────────────────────────────────────────────
+function confusion(t) {
+  let tp=0,fp=0,fn=0,tn=0;
+  gordPatients.forEach(({score,label}) => {
+    const p = score >= t ? 1 : 0;
+    if (p&&label) tp++; else if (p&&!label) fp++;
+    else if (!p&&label) fn++; else tn++;
+  });
+  return {tp,fp,fn,tn};
+}
+function calcMetrics({tp,fp,fn,tn}) {
+  const n=tp+fp+fn+tn;
+  const acc  = n>0?(tp+tn)/n:0;
+  const prec = (tp+fp)>0?tp/(tp+fp):0;
+  const rec  = (tp+fn)>0?tp/(tp+fn):0;
+  const f1   = (prec+rec)>0?2*prec*rec/(prec+rec):0;
+  const tpr  = (tp+fn)>0?tp/(tp+fn):0;
+  const fpr  = (fp+tn)>0?fp/(fp+tn):0;
+  return {acc,prec,rec,f1,tpr,fpr};
+}
+
+// ── ROC precompute — staircase from 20 patients ───────────
+let rocPts = [];
+function buildROC() {
+  // Step through each patient's score as threshold → true staircase curve
+  const thresholds = [1.001, ...gordPatients.map(p=>p.score).sort((a,b)=>b-a).map(s=>s-0.0001), -0.001];
+  rocPts = [];
+  thresholds.forEach(t => {
+    const cm=confusion(t), m=calcMetrics(cm);
+    rocPts.push({fpr:m.fpr, tpr:m.tpr});
+  });
+  rocPts.sort((a,b)=>a.fpr-b.fpr||a.tpr-b.tpr);
+  rocPts = rocPts.filter((p,i)=>i===0||p.fpr!==rocPts[i-1].fpr||p.tpr!==rocPts[i-1].tpr);
+  let auc=0;
+  for (let i=1;i<rocPts.length;i++)
+    auc+=(rocPts[i].fpr-rocPts[i-1].fpr)*(rocPts[i].tpr+rocPts[i-1].tpr)/2;
+  document.getElementById('auc-val').textContent = auc.toFixed(3);
+}
+buildROC();
+
+// ── Canvas helpers ────────────────────────────────────────
+const C = { navy:'#1b2a4a',blue:'#2e86c1',orange:'#e67e22',red:'#e74c3c',
+            green:'#27ae60',purple:'#8e44ad',mid:'#dce6f0',gray:'#4a4a5a' };
+
+function setupCanvas(id) {
+  const dpr = window.devicePixelRatio || 1;
+  const c = document.getElementById(id);
+  const r = c.getBoundingClientRect();
+  const pw = Math.round(r.width * dpr), ph = Math.round(r.height * dpr);
+  if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+const px = (v,w,pad) => pad.l + v*(w-pad.l-pad.r);
+const py = (v,h,pad) => pad.t + (1-v)*(h-pad.t-pad.b);
+
+function drawGrid(ctx,w,h,pad) {
+  ctx.save();
+  ctx.strokeStyle=C.mid; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  for(let i=0;i<=4;i++){
+    const x=px(i/4,w,pad), y=py(i/4,h,pad);
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,h-pad.b); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.strokeStyle=C.navy; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,h-pad.b); ctx.lineTo(w-pad.r,h-pad.b); ctx.stroke();
+  ctx.restore();
+}
+
+// ── Draw ROC ──────────────────────────────────────────────
+// pts: optional subset of rocPts to draw (for animation)
+function drawROC(t, pts) {
+  const drawPts = pts || rocPts;
+  const {ctx,w,h} = setupCanvas('c-roc');
+  ctx.clearRect(0,0,w,h);
+  const pad = {t:12,b:44,l:52,r:14};
+  drawGrid(ctx,w,h,pad);
+
+  // Tick labels
+  ctx.fillStyle=C.gray; ctx.font='11px Lato,sans-serif';
+  ctx.textAlign='center';
+  [0,.25,.5,.75,1].forEach(v=>{
+    ctx.fillText(v.toFixed(2), px(v,w,pad), h-pad.b+14);
+  });
+  ctx.textAlign='right';
+  [.25,.5,.75,1].forEach(v=>{
+    ctx.fillText(v.toFixed(2), pad.l-6, py(v,h,pad)+4);
+  });
+  ctx.save(); ctx.translate(13,py(0.5,h,pad));
+  ctx.rotate(-Math.PI/2); ctx.textAlign='center';
+  ctx.font='12px Lato,sans-serif';
+  ctx.fillText('TPR (Recall)',0,0); ctx.restore();
+  ctx.textAlign='center';
+  ctx.font='12px Lato,sans-serif';
+  ctx.fillText('FPR (1 − Specificity)', px(0.5,w,pad), h-4);
+
+  // Diagonal baseline
+  ctx.beginPath();
+  ctx.moveTo(px(0,w,pad),py(0,h,pad)); ctx.lineTo(px(1,w,pad),py(1,h,pad));
+  ctx.strokeStyle=C.gray; ctx.lineWidth=1; ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+
+  if (drawPts.length > 1) {
+    // Fill under curve
+    ctx.beginPath();
+    ctx.moveTo(px(0,w,pad),py(0,h,pad));
+    drawPts.forEach(p=>ctx.lineTo(px(p.fpr,w,pad),py(p.tpr,h,pad)));
+    ctx.lineTo(px(drawPts[drawPts.length-1].fpr,w,pad),py(0,h,pad));
+    ctx.closePath();
+    ctx.fillStyle='rgba(46,134,193,0.08)'; ctx.fill();
+
+    // ROC line
+    ctx.beginPath();
+    drawPts.forEach((p,i)=>{
+      i===0?ctx.moveTo(px(p.fpr,w,pad),py(p.tpr,h,pad))
+           :ctx.lineTo(px(p.fpr,w,pad),py(p.tpr,h,pad));
+    });
+    ctx.strokeStyle=C.blue; ctx.lineWidth=2.2; ctx.lineJoin='round'; ctx.stroke();
+  }
+
+  // Current point
+  const m = calcMetrics(confusion(t));
+  const dx=px(m.fpr,w,pad), dy=py(m.tpr,h,pad);
+  ctx.setLineDash([3,3]); ctx.strokeStyle='rgba(230,126,34,.4)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(dx,dy); ctx.lineTo(dx,py(0,h,pad)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(dx,dy); ctx.lineTo(px(0,w,pad),dy); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(dx,dy,7,0,Math.PI*2);
+  ctx.fillStyle=C.orange; ctx.fill();
+  ctx.strokeStyle='white'; ctx.lineWidth=2; ctx.stroke();
+}
+
+// ── Update formula box ────────────────────────────────────
+function drawBars(cm, m) {
+  const N = cm.tp + cm.fp + cm.fn + cm.tn;
+  const pct = v => (v*100).toFixed(1) + '%';
+  const set = (id, sub, val) => {
+    document.getElementById(id+'-sub').textContent = sub;
+    document.getElementById(id).textContent = val;
+  };
+  set('fv-acc',  `= (${cm.tp}+${cm.tn}) / ${N}  =`, pct(m.acc));
+  set('fv-rec',  `= ${cm.tp} / (${cm.tp}+${cm.fn})  =`, pct(m.rec));
+  set('fv-fpr',  `= ${cm.fp} / (${cm.fp}+${cm.tn})  =`, pct(m.fpr));
+
+  const hasPos = (cm.tp + cm.fp) > 0;
+  if (hasPos) {
+    set('fv-prec', `= ${cm.tp} / (${cm.tp}+${cm.fp})  =`, pct(m.prec));
+    const pd = m.prec.toFixed(2), rd = m.rec.toFixed(2);
+    set('fv-f1',   `= 2×${pd}×${rd} / (${pd}+${rd})  =`, pct(m.f1));
+  } else {
+    set('fv-prec', `= ${cm.tp} / 0  →`, 'undefined');
+    set('fv-f1',   'Precision undefined  →', 'undefined');
+  }
+}
+
+// ── Draw patient strip ────────────────────────────────────
+function drawPatients(t) {
+  const c = document.getElementById('c-patients');
+  const rect = c.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const pw = Math.round(rect.width * dpr), ph = Math.round(rect.height * dpr);
+  if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const w = rect.width, h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const padL=116, padR=20;
+  const y0 = h*0.28;   // Non-Cancer row centre
+  const yAx= h*0.55;   // Number-line axis
+  const y1 = h*0.82;   // Cancer row centre
+  const cr = 13;
+  const xs = v => padL + v*(w-padL-padR);
+  const tx = xs(t);
+
+  // ── Confusion matrix quadrant backgrounds (DYNAMIC — follow threshold tx) ──
+  const leftW  = Math.max(0, tx - padL);
+  const rightW = Math.max(0, w - padR - tx);
+  ctx.fillStyle='rgba(142,68,173,0.08)'; ctx.fillRect(padL, 0,   leftW,  yAx);   // TN
+  ctx.fillStyle='rgba(231,76,60,0.08)';  ctx.fillRect(tx,   0,   rightW, yAx);   // FP
+  ctx.fillStyle='rgba(230,126,34,0.08)'; ctx.fillRect(padL, yAx, leftW,  h-yAx); // FN
+  ctx.fillStyle='rgba(39,174,96,0.08)';  ctx.fillRect(tx,   yAx, rightW, h-yAx); // TP
+
+  // Quadrant labels centred in each zone (only if zone is wide enough to fit)
+  const midL = padL + leftW/2, midR = tx + rightW/2;
+  ctx.font='bold 13px Lato,sans-serif'; ctx.textAlign='center';
+  if (leftW > 50) {
+    ctx.fillStyle='rgba(142,68,173,0.45)'; ctx.fillText('True Negative',  midL, 15);
+    ctx.fillStyle='rgba(230,126,34,0.45)'; ctx.fillText('False Negative', midL, h-5);
+  }
+  if (rightW > 50) {
+    ctx.fillStyle='rgba(231,76,60,0.45)';  ctx.fillText('False Positive', midR, 15);
+    ctx.fillStyle='rgba(39,174,96,0.45)';  ctx.fillText('True Positive',  midR, h-5);
+  }
+
+  // ── Row labels with arrows ──
+  ctx.textAlign='right'; ctx.font='bold 10px Lato,sans-serif';
+  ctx.fillStyle='#445566';
+  ctx.fillText('Ground Truth = 0', padL-10, y0-18);
+  ctx.font='9px Lato,sans-serif'; ctx.fillStyle='#667788';
+  ctx.fillText('Non-Cancer  →', padL-10, y0+5);
+
+  ctx.font='bold 10px Lato,sans-serif'; ctx.fillStyle='#992222';
+  ctx.fillText('Ground Truth = 1', padL-10, y1-18);
+  ctx.font='9px Lato,sans-serif'; ctx.fillStyle='#aa3333';
+  ctx.fillText('Cancer  →', padL-10, y1+5);
+
+  // ── Axes ──
+  ctx.strokeStyle='#aabbcc'; ctx.lineWidth=2; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(padL,yAx); ctx.lineTo(w-padR,yAx); ctx.stroke(); // X-axis
+  ctx.beginPath(); ctx.moveTo(padL,2);   ctx.lineTo(padL,h-18);  ctx.stroke(); // Y-axis
+  ctx.setLineDash([]);
+
+  // Tick marks and N/P labels
+  [0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1].forEach(v=>{
+    const x=xs(v); const onRight=x>=tx;
+    ctx.beginPath(); ctx.moveTo(x,yAx-5); ctx.lineTo(x,yAx+5);
+    ctx.strokeStyle='#8899aa'; ctx.lineWidth=1.2; ctx.stroke();
+    // N or P label above each tick
+    ctx.fillStyle=onRight?C.blue:'#8899aa';
+    ctx.font=`bold 9px Lato,sans-serif`; ctx.textAlign='center';
+    ctx.fillText(onRight?'P':'N', x, yAx-9);
+    // Numeric label below tick
+    ctx.fillStyle='#8899aa'; ctx.font='9px Lato,sans-serif';
+    ctx.fillText(v.toFixed(1), x, yAx+17);
+  });
+
+  // ── Threshold bar (thick blue, solid — matches PPT) ──
+  ctx.beginPath(); ctx.moveTo(tx, 2); ctx.lineTo(tx, h-2);
+  ctx.strokeStyle=C.blue; ctx.lineWidth=7; ctx.lineCap='round';
+  ctx.stroke();
+
+  // Threshold value label above bar
+  const lr=tx<w-padR-60;
+  ctx.fillStyle=C.blue; ctx.font='bold 10px Lato,sans-serif';
+  ctx.textAlign=lr?'left':'right';
+  ctx.fillText('Threshold = '+t.toFixed(2), tx+(lr?9:-9), 13);
+
+  // ── Patient circles ──
+  gordPatients.forEach(({label,score})=>{
+    const x=xs(score), y=label===0?y0:y1;
+    const pred=score>=t?1:0;
+    let tag,tagColor;
+    if     (label===1&&pred===1){tag='TP';tagColor=C.green;}
+    else if(label===1&&pred===0){tag='FN';tagColor=C.orange;}
+    else if(label===0&&pred===1){tag='FP';tagColor=C.red;}
+    else                        {tag='TN';tagColor=C.purple;}
+
+    // Solid filled circles matching PPT style
+    ctx.beginPath(); ctx.arc(x,y,cr,0,Math.PI*2);
+    ctx.fillStyle = label===1 ? '#d94040' : '#4a5568';
+    ctx.fill();
+
+    // White label text inside circle
+    ctx.fillStyle='rgba(255,255,255,0.88)';
+    ctx.font='bold 7px Lato,sans-serif'; ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    if(label===1){ ctx.fillText('Cancer',x,y); }
+    else { ctx.fillText('Non-',x,y-4); ctx.fillText('Cancer',x,y+5); }
+    ctx.textBaseline='alphabetic';
+
+    // Classification badge ABOVE each circle (both rows)
+    ctx.fillStyle=tagColor; ctx.font='bold 11px Lato,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(tag, x, y-cr-5);
+  });
+}
+
+// ── Update all ────────────────────────────────────────────
+function update(t) {
+  const cm = confusion(t);
+  const m  = calcMetrics(cm);
+  document.getElementById('cm-tp').textContent = cm.tp;
+  document.getElementById('cm-fp').textContent = cm.fp;
+  document.getElementById('cm-fn').textContent = cm.fn;
+  document.getElementById('cm-tn').textContent = cm.tn;
+  drawROC(t);
+  drawBars(cm, m);
+  drawPatients(t);
+}
+
+// ── Slider ────────────────────────────────────────────────
+let threshold = 0.5;
+const slT = document.getElementById('sl-t');
+slT.addEventListener('input', e => {
+  threshold = parseFloat(e.target.value);
+  document.getElementById('lbl-t').textContent = threshold.toFixed(2);
+  slT.style.setProperty('--pct', (threshold*100).toFixed(1)+'%');
+  update(threshold);
+});
+
+// ── Animation ─────────────────────────────────────────────
+const ANIM_DURATION = 5000;
+const animThresholds = [
+  1.0,
+  ...gordPatients.map(p=>p.score).sort((a,b)=>b-a).map(s=>s-0.0001),
+  0.0
+];
+const animSteps = animThresholds.length - 1;
+
+// State: 'idle' | 'playing' | 'paused'
+let animState      = 'idle';
+let animFrame      = null;
+let animStartTime  = null;   // rAF timestamp when current play segment started
+let animElapsed    = 0;      // total elapsed ms, persists across pause/resume
+let animLastTs     = 0;      // last rAF timestamp, used to freeze elapsed on pause
+let animDrawnPts   = [];
+let animLastStep   = 0;
+
+const btnAnim = document.getElementById('btn-animate');
+
+function setSlider(t) {
+  threshold = t;
+  slT.value = t;
+  document.getElementById('lbl-t').textContent = t.toFixed(2);
+  slT.style.setProperty('--pct', (t*100).toFixed(1)+'%');
+}
+
+function animTick(timestamp) {
+  animLastTs = timestamp;
+  if (animStartTime === null) animStartTime = timestamp - animElapsed;
+  const elapsed = timestamp - animStartTime;
+  const step = Math.min(animSteps, Math.floor(elapsed / ANIM_DURATION * animSteps));
+
+  if (step !== animLastStep) {
+    for (let s = animLastStep + 1; s <= step; s++) {
+      const t = animThresholds[s];
+      const cm = confusion(t), m = calcMetrics(cm);
+      animDrawnPts.push({ fpr: m.fpr, tpr: m.tpr });
+      setSlider(t);
+      document.getElementById('cm-tp').textContent = cm.tp;
+      document.getElementById('cm-fp').textContent = cm.fp;
+      document.getElementById('cm-fn').textContent = cm.fn;
+      document.getElementById('cm-tn').textContent = cm.tn;
+      drawBars(cm, m);
+      drawPatients(t);
+    }
+    const sorted = [...animDrawnPts].sort((a,b)=>a.fpr-b.fpr||a.tpr-b.tpr);
+    drawROC(animThresholds[step], sorted);
+    animLastStep = step;
+  }
+
+  if (elapsed < ANIM_DURATION) {
+    animFrame = requestAnimationFrame(animTick);
+  } else {
+    // Completed naturally
+    animState = 'idle';
+    btnAnim.textContent = '▶ Animate';
+    update(threshold);
+  }
+}
+
+function handleAnimBtn() {
+  if (animState === 'idle') {
+    // ── Start from the beginning ──
+    animState     = 'playing';
+    btnAnim.textContent = '⏸ Pause';
+    animDrawnPts  = [];
+    animElapsed   = 0;
+    animStartTime = null;
+
+    // Render step 0 immediately (threshold = 1.0, all predicted negative)
+    const t0 = animThresholds[0];
+    const cm0 = confusion(t0), m0 = calcMetrics(cm0);
+    setSlider(t0);
+    document.getElementById('cm-tp').textContent = cm0.tp;
+    document.getElementById('cm-fp').textContent = cm0.fp;
+    document.getElementById('cm-fn').textContent = cm0.fn;
+    document.getElementById('cm-tn').textContent = cm0.tn;
+    drawBars(cm0, m0);
+    drawPatients(t0);
+    animDrawnPts  = [{ fpr: m0.fpr, tpr: m0.tpr }];
+    animLastStep  = 0;
+    drawROC(t0, animDrawnPts);
+
+    animFrame = requestAnimationFrame(animTick);
+
+  } else if (animState === 'playing') {
+    // ── Pause ──
+    animState = 'paused';
+    btnAnim.textContent = '▶ Resume';
+    if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+    // Freeze elapsed at the last rendered frame
+    animElapsed   = animLastTs - animStartTime;
+    animStartTime = null;
+
+  } else if (animState === 'paused') {
+    // ── Resume from where we left off ──
+    animState = 'playing';
+    btnAnim.textContent = '⏸ Pause';
+    animStartTime = null;  // animTick will recalculate using animElapsed
+    animFrame = requestAnimationFrame(animTick);
+  }
+}
+
+function resetAnim() {
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  animState     = 'idle';
+  btnAnim.textContent = '▶ Animate';
+  animDrawnPts  = [];
+  animLastStep  = 0;
+  animElapsed   = 0;
+  animStartTime = null;
+  setSlider(0.5);
+  update(0.5);
+}
+
+btnAnim.addEventListener('click', handleAnimBtn);
+document.getElementById('btn-reset').addEventListener('click', resetAnim);
+
+// ── Static model comparison ────────────────────────────────
+const staticModels = [
+  { id:'mc-random',  aucId:'mc-random-auc',  color:'#e74c3c',
+    nc:     [{s:0.15},{s:0.35},{s:0.65},{s:0.85}],
+    cancer: [{s:0.25},{s:0.45},{s:0.55},{s:0.75}] },
+  { id:'mc-good',    aucId:'mc-good-auc',    color:'#2e86c1',
+    nc:     [{s:0.05},{s:0.20},{s:0.35},{s:0.55},{s:0.70}],
+    cancer: [{s:0.30},{s:0.50},{s:0.75},{s:0.90}] },
+  { id:'mc-better',  aucId:'mc-better-auc',  color:'#16a085',
+    nc:     [{s:0.05},{s:0.15},{s:0.25},{s:0.38},{s:0.52},{s:0.65}],
+    cancer: [{s:0.45},{s:0.60},{s:0.75},{s:0.87},{s:0.96}] },
+  { id:'mc-perfect', aucId:'mc-perfect-auc', color:'#27ae60',
+    nc:     [{s:0.05},{s:0.15},{s:0.25},{s:0.35},{s:0.45}],
+    cancer: [{s:0.55},{s:0.65},{s:0.75},{s:0.85},{s:0.95}] },
+];
+
+function buildModelROC(ncArr, cancerArr) {
+  const all = [...ncArr.map(p=>({s:p.s,lbl:0})), ...cancerArr.map(p=>({s:p.s,lbl:1}))];
+  const Np = cancerArr.length, Nn = ncArr.length;
+  function cmM(t) {
+    let tp=0,fp=0,fn=0,tn=0;
+    all.forEach(({s,lbl})=>{
+      const pred=s>=t?1:0;
+      if(pred&&lbl) tp++; else if(pred&&!lbl) fp++;
+      else if(!pred&&lbl) fn++; else tn++;
+    });
+    return {tp,fp,fn,tn};
+  }
+  const ths=[1.001,...all.map(p=>p.s).sort((a,b)=>b-a).map(s=>s-0.0001),-0.001];
+  let pts=[];
+  ths.forEach(t=>{
+    const {tp,fp}=cmM(t);
+    pts.push({fpr:Nn>0?fp/Nn:0, tpr:Np>0?tp/Np:0});
+  });
+  pts.sort((a,b)=>a.fpr-b.fpr||a.tpr-b.tpr);
+  pts=pts.filter((p,i)=>i===0||p.fpr!==pts[i-1].fpr||p.tpr!==pts[i-1].tpr);
+  let auc=0;
+  for(let i=1;i<pts.length;i++)
+    auc+=(pts[i].fpr-pts[i-1].fpr)*(pts[i].tpr+pts[i-1].tpr)/2;
+  return {pts,auc};
+}
+
+function hexAlpha(hex, a) {
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function drawModelCard(model) {
+  const c = document.getElementById(model.id);
+  if (!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = c.getBoundingClientRect();
+  const pw=Math.round(rect.width*dpr), ph=Math.round(rect.height*dpr);
+  if (c.width!==pw||c.height!==ph){c.width=pw;c.height=ph;}
+  const ctx=c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const w=rect.width, h=rect.height;
+  ctx.clearRect(0,0,w,h);
+
+  const SPLIT=72;
+  const ncPts=model.nc, cancerPts=model.cancer;
+
+  // ── Patient strip (top SPLIT px) ──
+  const pL=12, pR=10;
+  const sxs=v=>pL+v*(w-pL-pR);
+  const sY0=18, sAx=37, sY1=58, sr=7;
+
+  // Axis
+  ctx.strokeStyle='#aabbcc'; ctx.lineWidth=1.5; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(pL,sAx); ctx.lineTo(w-pR,sAx); ctx.stroke();
+
+  // Score ticks + labels
+  [0,0.5,1].forEach(v=>{
+    const x=sxs(v);
+    ctx.strokeStyle='#8899aa'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x,sAx-3); ctx.lineTo(x,sAx+3); ctx.stroke();
+    ctx.fillStyle='#8899aa'; ctx.font='8px Lato,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(v.toFixed(1),x,sAx+13);
+  });
+
+  // NC dots (gray)
+  ncPts.forEach(({s})=>{
+    ctx.beginPath(); ctx.arc(sxs(s),sY0,sr,0,Math.PI*2);
+    ctx.fillStyle='#5a6a7e'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+  });
+  // Cancer dots (red)
+  cancerPts.forEach(({s})=>{
+    ctx.beginPath(); ctx.arc(sxs(s),sY1,sr,0,Math.PI*2);
+    ctx.fillStyle='#d94040'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+  });
+
+  // Divider
+  ctx.strokeStyle=C.mid; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,SPLIT); ctx.lineTo(w,SPLIT); ctx.stroke();
+
+  // ── ROC curve (below SPLIT) ──
+  const {pts,auc}=buildModelROC(ncPts,cancerPts);
+  document.getElementById(model.aucId).textContent=auc.toFixed(3);
+
+  const pad={t:SPLIT+8, b:h-14, l:24, r:8};
+  const rx=v=>pad.l+v*(w-pad.l-pad.r);
+  const ry=v=>pad.t+(1-v)*(pad.b-pad.t);
+
+  // Grid
+  ctx.strokeStyle=C.mid; ctx.lineWidth=0.7; ctx.setLineDash([2,3]);
+  [0,0.5,1].forEach(v=>{
+    ctx.beginPath(); ctx.moveTo(rx(v),pad.t); ctx.lineTo(rx(v),pad.b); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.l,ry(v)); ctx.lineTo(w-pad.r,ry(v)); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  // Axes
+  ctx.strokeStyle=C.navy; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.b); ctx.lineTo(w-pad.r,pad.b); ctx.stroke();
+
+  // Tick labels
+  ctx.fillStyle=C.gray; ctx.font='8px Lato,sans-serif';
+  ctx.textAlign='center';
+  [0,0.5,1].forEach(v=>ctx.fillText(v.toFixed(1),rx(v),pad.b+11));
+  ctx.textAlign='right';
+  [0.5,1].forEach(v=>ctx.fillText(v.toFixed(1),pad.l-3,ry(v)+3));
+
+  // Diagonal
+  ctx.beginPath(); ctx.moveTo(rx(0),ry(0)); ctx.lineTo(rx(1),ry(1));
+  ctx.strokeStyle=C.gray; ctx.lineWidth=0.8; ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+
+  if (pts.length>1) {
+    // Fill under curve
+    ctx.beginPath();
+    ctx.moveTo(rx(0),ry(0));
+    pts.forEach(p=>ctx.lineTo(rx(p.fpr),ry(p.tpr)));
+    ctx.lineTo(rx(pts[pts.length-1].fpr),ry(0));
+    ctx.closePath();
+    ctx.fillStyle=hexAlpha(model.color,0.12); ctx.fill();
+    // ROC line
+    ctx.beginPath();
+    pts.forEach((p,i)=>i===0?ctx.moveTo(rx(p.fpr),ry(p.tpr)):ctx.lineTo(rx(p.fpr),ry(p.tpr)));
+    ctx.strokeStyle=model.color; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
+  }
+}
+
+// ── Resize / zoom ─────────────────────────────────────────
+function fullRedraw() {
+  update(threshold);
+  staticModels.forEach(m=>drawModelCard(m));
+}
+const ro = new ResizeObserver(()=>fullRedraw());
+['c-roc','c-patients',...staticModels.map(m=>m.id)].forEach(id=>{
+  const el = document.getElementById(id);
+  if (el) ro.observe(el);
+});
+
+// Re-draw when browser zoom changes (DPR changes, no CSS layout change)
+let _lastDpr = window.devicePixelRatio || 1;
+window.addEventListener('resize', () => {
+  const newDpr = window.devicePixelRatio || 1;
+  if (newDpr !== _lastDpr) { _lastDpr = newDpr; }
+  fullRedraw();
+});
+
+// ── Init ──────────────────────────────────────────────────
+slT.style.setProperty('--pct','50%');
+function initDraw(attempts) {
+  const el = document.getElementById('c-roc');
+  const rect = el && el.getBoundingClientRect();
+  if (rect && rect.width > 0 && rect.height > 0) {
+    fullRedraw();
+  } else if (attempts < 20) {
+    requestAnimationFrame(() => initDraw(attempts + 1));
+  } else {
+    fullRedraw(); // last resort
+  }
+}
+requestAnimationFrame(() => initDraw(0));
+</script>
+</body>
+</html>

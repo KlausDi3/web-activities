@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scaling Lab — Model × Data Explorer</title>
+<style>
+  :root{
+    --bg:#f3f5f9;
+    --group:#eef2f8;
+    --panel:#ffffff;
+    --line:#dce3ee;
+    --line-soft:#e8edf5;
+    --text:#1f2a3a;
+    --muted:#6b7890;
+    --faint:#9aa6bd;
+    --accent:#3b6fe0;
+    --good:#159a72;
+    --box-empty:#e3e9f3;
+    --box-fill:#3b6fe0;
+    --radius:16px;
+    --shadow:0 6px 20px rgba(40,60,100,.08);
+    --shadow-soft:0 2px 8px rgba(40,60,100,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    padding:22px;
+  }
+  .app-header{
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    margin:2px 4px 18px;
+  }
+  .app-header h1{font-size:20px;margin:0;letter-spacing:.3px;}
+  .app-header .sub{color:var(--muted);font-size:13px;}
+
+  /* ---- board: two big group boxes (Setup | Results) ---- */
+  .board{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width:920px){
+    .board{grid-template-columns:1fr;}   /* Notice #1: stack when narrow */
+  }
+
+  .group{
+    background:var(--group);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:16px;
+    box-shadow:var(--shadow);
+  }
+  .group-head{
+    display:flex;align-items:center;gap:11px;
+    font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;
+    color:var(--muted);margin:4px 4px 14px;
+  }
+  .group-head .dot{width:10px;height:10px;border-radius:50%;}
+  .group-head.setup .dot{background:var(--accent);}
+  .group-head.results .dot{background:var(--good);}
+  .group-head .tag{margin-left:auto;font-size:12px;font-weight:500;letter-spacing:.3px;text-transform:none;color:var(--faint);}
+  .dlbtn{
+    margin-left:10px;font-size:12px;font-weight:600;letter-spacing:.2px;text-transform:none;
+    padding:7px 13px;border-radius:9px;cursor:pointer;transition:.15s;
+    border:1px solid #3b6fe0;background:#fff;color:#3b6fe0;
+  }
+  .dlbtn:hover:not(:disabled){background:#3b6fe0;color:#fff;}
+  .dlbtn:disabled{opacity:.5;cursor:not-allowed;border-color:var(--line);color:var(--faint);}
+  .group-body{display:flex;flex-direction:column;gap:16px;}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-soft);
+    padding:18px;
+    display:flex;flex-direction:column;
+    min-width:0;
+  }
+  .card h2{
+    font-size:12px;text-transform:uppercase;letter-spacing:1.1px;
+    color:var(--muted);margin:0 0 14px;font-weight:700;
+  }
+  .card h2 .hint{text-transform:none;letter-spacing:0;font-weight:400;color:var(--faint);}
+
+  /* ---- stepper control ---- */
+  .control{margin-bottom:18px;}
+  .control:last-child{margin-bottom:0;}
+  .control .label{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  .stepper{display:flex;align-items:center;gap:12px;}
+  .stepper .value{
+    font-size:26px;font-weight:700;min-width:120px;
+    font-variant-numeric:tabular-nums;color:var(--text);
+  }
+  .stepper .value small{font-size:13px;color:var(--muted);font-weight:500;margin-left:4px;}
+  .stepbtns{display:flex;flex-direction:column;gap:6px;}
+  .stepbtns button{
+    width:40px;height:27px;font-size:13px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;border:1px solid #3b6fe0;color:#fff;
+    background:linear-gradient(180deg,#5b8cff,#3b6fe0);
+    border-radius:9px;transition:.15s;
+  }
+  .stepbtns button:hover:not(:disabled){filter:brightness(1.06);}
+  .stepbtns button:disabled{opacity:.35;cursor:not-allowed;}
+
+  /* ---- data box grid ---- */
+  .boxwrap{margin-top:6px;}
+  .boxmeta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .boxmeta b{color:var(--text);}
+  .boxgrid{
+    display:grid;grid-template-columns:repeat(20,1fr);gap:3px;
+    max-height:150px;overflow:auto;
+    padding:8px;background:#f7f9fc;border-radius:10px;border:1px solid var(--line-soft);
+  }
+  .box{aspect-ratio:1/1;border-radius:3px;background:var(--box-empty);transition:background .25s;}
+  .box.fill{background:var(--box-fill);box-shadow:0 0 5px rgba(59,111,224,.45);}
+
+  /* ---- network showcase ---- */
+  .netwrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:180px;}
+  svg{max-width:100%;height:auto;display:block;}
+  #netviz{width:100%;max-width:420px;height:auto;}
+  #chart{width:100%;}
+
+  .runrow{display:flex;align-items:center;gap:14px;margin-top:14px;}
+  .runbtn{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:10px;
+    padding:12px;font-size:15px;font-weight:600;cursor:pointer;
+    background:linear-gradient(180deg,#5b8cff,#3b6fe0);border:1px solid #3b6fe0;color:#fff;
+    border-radius:11px;transition:.15s;
+  }
+  .runbtn:hover{filter:brightness(1.06);}
+  .runbtn .tri{width:0;height:0;border-left:12px solid #fff;border-top:8px solid transparent;border-bottom:8px solid transparent;}
+  .runbtn .reload{font-size:19px;line-height:1;}
+  .runbtn small{font-weight:400;opacity:.85;font-size:12px;}
+  .runbtn.danger{background:linear-gradient(180deg,#f06a86,#d6395b);border-color:#d6395b;}
+  .runbtn.success{background:linear-gradient(180deg,#22c995,#159a72);border-color:#159a72;}
+  .runbtn:disabled{
+    background:linear-gradient(180deg,#cdd5e2,#b6c0d1);border-color:#b6c0d1;color:#fff;
+    cursor:not-allowed;filter:none;
+  }
+  .runnote{font-size:12px;color:var(--muted);}
+
+  /* ---- results table ---- */
+  .tablewrap{overflow:auto;border-radius:10px;border:1px solid var(--line);}
+  table{border-collapse:collapse;width:100%;font-size:13px;}
+  th,td{padding:9px 12px;text-align:center;border:1px solid var(--line);white-space:nowrap;}
+  thead th{background:#f4f7fb;color:var(--muted);font-weight:600;}
+  tbody th{background:#f4f7fb;color:var(--text);font-weight:600;text-align:left;}
+  td .corner,th .corner{font-size:11px;color:var(--faint);}
+  th.corner-cell{background:#eef2f8;}
+  td.val{color:var(--good);font-variant-numeric:tabular-nums;font-weight:700;}
+  td.empty{color:#c2ccdb;}
+  td.current{outline:2px solid var(--accent);outline-offset:-2px;}
+
+  /* ---- chart ---- */
+  .chartwrap{flex:1;display:flex;flex-direction:column;}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+  .legend label{
+    display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;
+    padding:4px 10px;border-radius:20px;border:1px solid var(--line);background:#f7f9fc;user-select:none;
+  }
+  .legend .swatch{width:11px;height:11px;border-radius:50%;}
+  .legend input{display:none;}
+  .legend label.off{opacity:.4;}
+  .chartfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;}
+  .restartbtn{
+    display:inline-flex;align-items:center;gap:8px;padding:9px 16px;font-size:13px;font-weight:600;
+    background:#fdecef;border:1px solid #f3b8c4;color:#cc3355;border-radius:10px;cursor:pointer;transition:.15s;
+  }
+  .restartbtn:hover{background:#fbdde3;}
+  .axis-label{font-size:11px;fill:var(--muted);}
+  .grid-line{stroke:var(--line);stroke-width:1;}
+  .tick-text{font-size:10px;fill:var(--muted);}
+  .pt{cursor:pointer;}
+  .footer-note{margin:18px 4px 0;color:var(--faint);font-size:12px;}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <h1>Scaling Lab</h1>
+  <span class="sub">Pick a model size &amp; data size, run it, and watch the loss surface fill in across runs.</span>
+</div>
+
+<div class="board">
+
+  <!-- ===================== LEFT GROUP : SETUP ===================== -->
+  <section class="group">
+    <div class="group-head setup"><span class="dot"></span> Setup <span class="tag">configure &amp; run</span></div>
+    <div class="group-body">
+
+      <!-- Config (data size) -->
+      <div class="card" id="card-config">
+        <h2>Config <span class="hint">— data, model size</span></h2>
+        <div class="control">
+          <div class="label">Data size</div>
+          <div class="stepper">
+            <div class="stepbtns">
+              <button id="data-up" title="Larger">▲</button>
+              <button id="data-down" title="Smaller">▼</button>
+            </div>
+            <div class="value"><span id="data-value">—</span><small>examples</small></div>
+          </div>
+        </div>
+        <div class="boxwrap">
+          <div class="boxmeta">
+            <span>Each box = <b id="unit-label">1k</b> · filled in order from full set</span>
+            <span><b id="box-count">0</b> / <span id="box-total">0</span> highlighted</span>
+          </div>
+          <div class="boxgrid" id="boxgrid"></div>
+        </div>
+      </div>
+
+      <!-- Model showcase + Run -->
+      <div class="card" id="card-model">
+        <h2>Model size <span class="hint">— showcase</span></h2>
+        <div class="control">
+          <div class="stepper">
+            <div class="stepbtns">
+              <button id="model-up" title="Larger">▲</button>
+              <button id="model-down" title="Smaller">▼</button>
+            </div>
+            <div class="value"><span id="model-value">—</span><small>params</small></div>
+          </div>
+        </div>
+        <div class="netwrap">
+          <svg id="netviz" viewBox="0 0 420 200" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="runrow">
+          <button class="runbtn" id="run-btn"><span class="tri"></span> Run</button>
+          <span class="runnote" id="run-note"></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== RIGHT GROUP : RESULTS ===================== -->
+  <section class="group">
+    <div class="group-head results"><span class="dot"></span> Results <span class="tag">populated across runs</span></div>
+    <div class="group-body">
+
+      <!-- Results table -->
+      <div class="card" id="card-table">
+        <h2>Table of results <span class="hint">— populated across runs</span></h2>
+        <div class="tablewrap">
+          <table id="results-table"></table>
+        </div>
+      </div>
+
+      <!-- Result figure -->
+      <div class="card" id="card-chart">
+        <h2>Result figure <span class="hint">— loss vs. data size, by model size</span></h2>
+        <div class="chartwrap">
+          <div class="legend" id="legend"></div>
+          <svg id="chart" viewBox="0 0 520 300" preserveAspectRatio="xMidYMid meet"></svg>
+          <p class="runnote" style="margin:10px 0 0;">Tick a model size to show / hide its trail.</p>
+          <div class="runrow">
+            <button class="runbtn success" id="download-btn" disabled><span class="reload">⤓</span> Download PNG <small>· table + figure</small></button>
+          </div>
+          <div class="runrow">
+            <button class="runbtn danger" id="restart-btn"><span class="reload">↻</span> Restart <small>· clear all trails</small></button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<div class="footer-note">
+  Notice ① Layout adapts to scale: when the window is narrow the Setup and Results boxes stack into one column.
+</div>
+
+<script>
+/* =====================================================================
+   ┌─────────────────────────────────────────────────────────────────┐
+   │  PARAMETERS — replace these with your real values / data later.   │
+   └─────────────────────────────────────────────────────────────────┘
+   ===================================================================== */
+
+const PARAMS = {
+  // ---- data size ----
+  dataUnit:        1000,                                  // size represented by ONE box
+  totalDataSize:   60000,                                 // full available dataset (drives # of boxes)
+  allowedDataSizes: [1000, 5000, 10000, 30000, 60000],   // up/down snaps ONLY between these
+
+  // ---- model size ----
+  allowedModelSizes: ['5+5', '10+10', '15+15', '20+20', '25+25', '30+30'], // up/down snaps ONLY between these
+
+  // ---- download ----
+  downloadThreshold: 16,   // # of cells that must be run before Download unlocks
+
+  // optional defaults (must exist in the allowed lists)
+  defaultDataSize:  1000,
+  defaultModelSize: '5+5',
+
+  // ---- downloaded image ----
+  imageTitle:    'Scaling Lab — Results',  // title drawn on the exported PNG
+  imageFileName: 'scaling-lab-results',    // base filename (a timestamp is appended)
+};
+const IMG_TITLE = PARAMS.imageTitle;
+
+/* ---------------------------------------------------------------------
+   NETWORK FIGURE — per model size, the figure draws the EXACT number of
+   circles in each hidden layer ("5+5" => 5 and 5). Tune the dot `radius`
+   and `edgeWidth` per size so dense networks stay legible.
+   INPUT layer represents a 28×28 image (784 pixels) — too many to draw, so
+   we show `input` dots split top/bottom with a "⋮ / 28×28" label in the gap.
+   OUTPUT layer is `output` dots = the final class scores (10 classes).
+   --------------------------------------------------------------------- */
+const NETWORK_VIZ = {
+  input:  8,          // dots drawn to represent the 28×28 = 784 input pixels
+  output: 10,         // circles in the output layer (one per final class)
+  perSize: {
+    '5+5':   { radius: 9.0, edgeWidth: 0.8 },
+    '10+10': { radius: 6.0, edgeWidth: 0.6 },
+    '15+15': { radius: 4.8, edgeWidth: 0.5 },
+    '20+20': { radius: 3.8, edgeWidth: 0.4 },
+    '25+25': { radius: 3.1, edgeWidth: 0.35 },
+    '30+30': { radius: 2.7, edgeWidth: 0.3 },
+  },
+};
+
+/* =====================================================================
+   ┌─────────────────────────────────────────────────────────────────┐
+   │  RESULTS DATA — baked into this file (keeps it a single runnable  │
+   │  HTML). Just edit the `loss` numbers below with your real values. │
+   │  One row per (modelSize, dataSize). loss: null = "not measured".  │
+   │  Mirrors experiments.txt. Values shown now are PLACEHOLDERS.      │
+   └─────────────────────────────────────────────────────────────────┘
+   ===================================================================== */
+
+const RESULTS_DATA = [
+  // modelSize ,  dataSize ,  loss (loss_mean from experiments_results.json)
+  { modelSize: '5+5',     dataSize: 1000,   loss: 2.2035 },
+  { modelSize: '5+5',     dataSize: 5000,   loss: 1.7384 },
+  { modelSize: '5+5',     dataSize: 10000,  loss: 1.2949 },
+  { modelSize: '5+5',     dataSize: 30000,  loss: 0.7247 },
+  { modelSize: '5+5',     dataSize: 60000,  loss: 0.5059 },
+
+  { modelSize: '10+10',   dataSize: 1000,   loss: 1.9974 },
+  { modelSize: '10+10',   dataSize: 5000,   loss: 0.9853 },
+  { modelSize: '10+10',   dataSize: 10000,  loss: 0.5659 },
+  { modelSize: '10+10',   dataSize: 30000,  loss: 0.3292 },
+  { modelSize: '10+10',   dataSize: 60000,  loss: 0.2744 },
+
+  { modelSize: '15+15',   dataSize: 1000,   loss: 1.9223 },
+  { modelSize: '15+15',   dataSize: 5000,   loss: 0.7290 },
+  { modelSize: '15+15',   dataSize: 10000,  loss: 0.4185 },
+  { modelSize: '15+15',   dataSize: 30000,  loss: 0.2755 },
+  { modelSize: '15+15',   dataSize: 60000,  loss: 0.2234 },
+
+  { modelSize: '20+20',   dataSize: 1000,   loss: 1.8195 },
+  { modelSize: '20+20',   dataSize: 5000,   loss: 0.5444 },
+  { modelSize: '20+20',   dataSize: 10000,  loss: 0.3475 },
+  { modelSize: '20+20',   dataSize: 30000,  loss: 0.2398 },
+  { modelSize: '20+20',   dataSize: 60000,  loss: 0.1855 },
+
+  { modelSize: '25+25',   dataSize: 1000,   loss: 1.7349 },
+  { modelSize: '25+25',   dataSize: 5000,   loss: 0.4394 },
+  { modelSize: '25+25',   dataSize: 10000,  loss: 0.3126 },
+  { modelSize: '25+25',   dataSize: 30000,  loss: 0.2158 },
+  { modelSize: '25+25',   dataSize: 60000,  loss: 0.1688 },
+
+  { modelSize: '30+30',   dataSize: 1000,   loss: 1.5575 },
+  { modelSize: '30+30',   dataSize: 5000,   loss: 0.3939 },
+  { modelSize: '30+30',   dataSize: 10000,  loss: 0.2875 },
+  { modelSize: '30+30',   dataSize: 30000,  loss: 0.2019 },
+  { modelSize: '30+30',   dataSize: 60000,  loss: 0.1539 },
+];
+
+/* ---------------------------------------------------------------------
+   ALTERNATIVE: if you'd rather paste a CSV string, drop it into
+   RESULTS_CSV below (header row: modelSize,dataSize,loss). Leave it as
+   an empty string to use RESULTS_DATA above instead.
+   --------------------------------------------------------------------- */
+const RESULTS_CSV = ``;   // e.g. `modelSize,dataSize,loss\n5+5,1000,1.25\n...`
+
+function parseCSV(text){
+  const lines = text.trim().split(/\r?\n/);
+  const head = lines.shift().split(',').map(s=>s.trim());
+  const iM = head.indexOf('modelSize'), iD = head.indexOf('dataSize'), iL = head.indexOf('loss');
+  return lines.filter(l=>l.trim()).map(l => {
+    const c = l.split(',');
+    return { modelSize: c[iM].trim(), dataSize: c[iD].trim(), loss: c[iL] };
+  });
+}
+
+const RESULTS = (RESULTS_CSV.trim() ? parseCSV(RESULTS_CSV) : RESULTS_DATA).map(r => ({
+  modelSize: String(r.modelSize),
+  dataSize: Number(r.dataSize),
+  loss: (r.loss === '' || r.loss == null) ? null : Number(r.loss),
+}));
+
+function lossFor(modelSize, dataSize){
+  const r = RESULTS.find(x => x.modelSize === modelSize && Number(x.dataSize) === Number(dataSize));
+  return r ? r.loss : null;
+}
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+
+const COLORS = ['#3b6fe0','#159a72','#e08a1e','#d6488a','#8a5bd6','#1ba6bd','#b59e1e','#e0653b'];
+const modelColor = {};
+PARAMS.allowedModelSizes.forEach((m,i)=> modelColor[m] = COLORS[i % COLORS.length]);
+
+const state = {
+  dataIdx:  Math.max(0, PARAMS.allowedDataSizes.indexOf(PARAMS.defaultDataSize)),
+  modelIdx: Math.max(0, PARAMS.allowedModelSizes.indexOf(PARAMS.defaultModelSize)),
+  runs: {},                       // key "model|data" -> loss   (trails populated across runs)
+  hidden: new Set(),              // model sizes hidden in chart
+  sampleSeed: 1,                  // bumps to re-sample box highlight
+};
+
+const curData  = () => PARAMS.allowedDataSizes[state.dataIdx];
+const curModel = () => PARAMS.allowedModelSizes[state.modelIdx];
+
+/* =====================================================================
+   STEPPERS — up/down snap ONLY between allowed settings
+   ===================================================================== */
+
+function stepData(dir){
+  const n = PARAMS.allowedDataSizes.length;
+  state.dataIdx = Math.min(n-1, Math.max(0, state.dataIdx + dir));
+  state.sampleSeed++;             // re-sample which boxes light up
+  render();
+}
+function stepModel(dir){
+  const n = PARAMS.allowedModelSizes.length;
+  state.modelIdx = Math.min(n-1, Math.max(0, state.modelIdx + dir));
+  render();
+}
+
+document.getElementById('data-up').onclick   = () => stepData(+1);
+document.getElementById('data-down').onclick = () => stepData(-1);
+document.getElementById('model-up').onclick   = () => stepModel(+1);
+document.getElementById('model-down').onclick = () => stepModel(-1);
+
+document.getElementById('run-btn').onclick = () => {
+  const key = curModel() + '|' + curData();
+  state.runs[key] = lossFor(curModel(), curData());
+  render();
+};
+document.getElementById('restart-btn').onclick = () => {
+  state.runs = {};
+  render();
+};
+
+/* =====================================================================
+   FORMATTING
+   ===================================================================== */
+function fmtData(n){
+  if (n >= 1000) return (n/1000) + 'k';
+  return '' + n;
+}
+
+/* =====================================================================
+   RENDER: data boxes (each = 1 unit; highlight random sample)
+   ===================================================================== */
+function seededRandoms(count, total, seed){
+  const idx = [];
+  let s = (seed * 9301 + 49297) % 233280;
+  const next = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  const pool = Array.from({length: total}, (_,i)=>i);
+  for (let i=0;i<count && pool.length;i++){
+    const j = Math.floor(next() * pool.length);
+    idx.push(pool.splice(j,1)[0]);
+  }
+  return new Set(idx);
+}
+
+function renderBoxes(){
+  const total = Math.round(PARAMS.totalDataSize / PARAMS.dataUnit);
+  const filled = Math.round(curData() / PARAMS.dataUnit);
+
+  document.getElementById('unit-label').textContent = fmtData(PARAMS.dataUnit);
+  document.getElementById('box-count').textContent  = filled;
+  document.getElementById('box-total').textContent  = total;
+
+  const grid = document.getElementById('boxgrid');
+  grid.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  for (let i=0;i<total;i++){
+    const b = document.createElement('div');
+    // Fill the first `filled` boxes in order (no random sampling).
+    b.className = 'box' + (i < filled ? ' fill' : '');
+    frag.appendChild(b);
+  }
+  grid.appendChild(frag);
+}
+
+/* =====================================================================
+   RENDER: model network showcase
+   "5+5" => two hidden layers of widths [5,5]; plus fixed input/output.
+   ===================================================================== */
+// Parse a model-size string ("5+5") into its hidden-layer widths.
+function modelWidths(m){
+  return m.split('+').map(s => parseInt(s,10)).filter(n=>!isNaN(n));
+}
+function netCfg(m){
+  return NETWORK_VIZ.perSize[m] || { radius: Math.max(2, 40/Math.max(...modelWidths(m))), edgeWidth: 0.4 };
+}
+// How tall (in viewBox units) one model's figure would need to be.
+function netHeightFor(m){
+  const widths = modelWidths(m);
+  const cfg = netCfg(m);
+  const layers = [NETWORK_VIZ.input, ...widths, NETWORK_VIZ.output].filter(n => n>0);
+  const maxNodes = Math.max(...layers);
+  return maxNodes * (cfg.radius*2 + 3) + 2*NET_PAD_Y;
+}
+const NET_PAD_Y = 18;
+// Fixed figure height = the largest case across ALL allowed sizes, so the
+// panel never resizes when stepping; width:100%/height:auto keeps it
+// responsive to the window.
+const NET_FIG_H = Math.max(200, ...PARAMS.allowedModelSizes.map(netHeightFor));
+
+function renderNet(){
+  const svg = document.getElementById('netviz');
+  const model = curModel();
+  const widths = modelWidths(model);
+  const cfg = netCfg(model);
+
+  // EXACT counts: input … each hidden layer … output (0-count layers dropped)
+  const layers = [NETWORK_VIZ.input, ...widths, NETWORK_VIZ.output].filter(n => n>0);
+  const lastLi = layers.length - 1;
+
+  const W=420, padX=26, padY=NET_PAD_Y;
+  const NET_TOP = 44;               // top band: model caption + column headers
+  const H = NET_FIG_H;              // node-area height (constant across sizes)
+  const avail = H - 2*padY;
+  const nodeTop = NET_TOP + padY;   // y of the first node row
+  const NET_BOTTOM = 16;            // bottom band: per-column footnotes
+  const totalH = NET_TOP + H + NET_BOTTOM;
+
+  const colX = i => padX + i*(W-2*padX)/(layers.length-1);
+
+  // Node y-positions per layer. The INPUT column (li===0) stands in for a
+  // 28×28 image: we draw its dots split into a top group and a bottom group,
+  // leaving a central gap for a "⋮ / 28×28" label. Every other layer uses
+  // even spacing across the full height with its exact node count.
+  // The three text segments in the input gap — top "⋮", "28×28", bottom "⋮" —
+  // double as connection points: lines emanate from them just like the dots.
+  const inSegY = [nodeTop + avail*0.40, nodeTop + avail*0.50, nodeTop + avail*0.60];
+
+  const nodePos = layers.map((cnt, li) => {
+    const ys = [];
+    if (li === 0){
+      const half = cnt/2;
+      const topA = nodeTop,              topB = nodeTop + avail*0.30;
+      const botA = nodeTop + avail*0.70, botB = nodeTop + avail;
+      for (let k=0;k<half;k++) ys.push(topA + (half<=1 ? 0 : k*(topB-topA)/(half-1)));
+      for (let k=0;k<half;k++) ys.push(botA + (half<=1 ? 0 : k*(botB-botA)/(half-1)));
+      // edgeYs adds the text-segment positions so they connect too
+      return { x: colX(li), ys, edgeYs: [...ys, ...inSegY] };
+    }
+    for (let k=0;k<cnt;k++){
+      ys.push(nodeTop + (cnt===1 ? avail/2 : k*avail/(cnt-1)));
+    }
+    return { x: colX(li), ys, edgeYs: ys };
+  });
+
+  let s = '';
+  // edges (fully connected between adjacent layers). For the input column the
+  // 8 dots AND its three text segments ("⋮", "28×28", "⋮") all act as origins.
+  for (let li=0; li<nodePos.length-1; li++){
+    const a = nodePos[li], b = nodePos[li+1];
+    a.edgeYs.forEach(ay => b.edgeYs.forEach(by => {
+      s += `<line x1="${a.x}" y1="${ay}" x2="${b.x}" y2="${by}" stroke="#cdd7e6" stroke-width="${cfg.edgeWidth}" opacity="0.7"/>`;
+    }));
+  }
+  // nodes — exact count per layer
+  nodePos.forEach((col, li) => {
+    const fill = (li===0) ? '#159a72' : (li===lastLi) ? '#e08a1e' : modelColor[model];
+    col.ys.forEach(y => {
+      s += `<circle cx="${col.x}" cy="${y}" r="${cfg.radius}" fill="${fill}" opacity="0.92"/>`;
+    });
+  });
+
+  // Input column central gap: "⋮ / 28×28 / ⋮", drawn on top of the lines that
+  // emanate from each of these three segment positions.
+  const inX = colX(0);
+  s += `<text x="${inX}" y="${inSegY[0]+6}" text-anchor="middle" fill="#159a72" font-size="18" font-weight="700">⋮</text>`;
+  s += `<text x="${inX}" y="${inSegY[1]+4}" text-anchor="middle" class="axis-label" style="font-weight:700">28×28</text>`;
+  s += `<text x="${inX}" y="${inSegY[2]+6}" text-anchor="middle" fill="#159a72" font-size="18" font-weight="700">⋮</text>`;
+
+  // Output column: label the 10 class scores
+  s += `<text x="${colX(lastLi)}" y="${totalH-3}" text-anchor="middle" class="axis-label">10 classes</text>`;
+
+  // Input column: label the source as a digit image (two lines, below the dots)
+  s += `<text x="${colX(0)}" y="${totalH-13}" text-anchor="middle" class="axis-label">digit</text>`;
+  s += `<text x="${colX(0)}" y="${totalH-3}"  text-anchor="middle" class="axis-label">image</text>`;
+
+  // Model caption — sits at the very top of the figure, near the "params" line.
+  const total = widths.reduce((a,b)=>a+b,0);
+  s += `<text x="${W/2}" y="12" text-anchor="middle" class="axis-label">model ${model} · ${widths.join(' + ')} = ${total} hidden units</text>`;
+
+  // Column headers above each column of dots (two stacked lines).
+  layers.forEach((cnt, li) => {
+    const l1 = (li===0) ? 'Input' : (li===lastLi) ? 'Output' : 'Hidden';
+    const l2 = (li===0 || li===lastLi) ? 'layer' : 'layer ' + li;
+    const x = colX(li);
+    s += `<text x="${x}" y="${NET_TOP-14}" text-anchor="middle" class="axis-label" style="font-weight:700">${l1}</text>`;
+    s += `<text x="${x}" y="${NET_TOP-4}"  text-anchor="middle" class="axis-label" style="font-weight:700">${l2}</text>`;
+  });
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${totalH}`);
+  svg.innerHTML = s;
+}
+
+/* =====================================================================
+   RENDER: results table (rows = model size, cols = data size)
+   ===================================================================== */
+function renderTable(){
+  const t = document.getElementById('results-table');
+  let html = '<thead><tr><th class="corner-cell"><span class="corner">model ＼ data</span></th>';
+  PARAMS.allowedDataSizes.forEach(d => html += `<th>${fmtData(d)}</th>`);
+  html += '</tr></thead><tbody>';
+
+  PARAMS.allowedModelSizes.forEach(m => {
+    html += `<tr><th>${m}</th>`;
+    PARAMS.allowedDataSizes.forEach(d => {
+      const key = m + '|' + d;
+      const isCur = (m===curModel() && d===curData());
+      const cls = isCur ? ' current' : '';
+      if (key in state.runs){
+        const v = state.runs[key];
+        html += `<td class="val${cls}">${v==null ? '—' : v}</td>`;
+      } else {
+        html += `<td class="empty${cls}">·</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+/* =====================================================================
+   RENDER: chart (loss vs data size, line per model size, color coded)
+   ===================================================================== */
+function renderChart(){
+  const svg = document.getElementById('chart');
+  const W=520, H=300, L=52, R=18, T=18, B=44;
+  const xs = PARAMS.allowedDataSizes;
+  const colX = i => L + (xs.length===1 ? (W-L-R)/2 : i*(W-L-R)/(xs.length-1));
+
+  const series = {};
+  Object.entries(state.runs).forEach(([key,loss]) => {
+    if (loss==null) return;
+    const [m,d] = key.split('|');
+    (series[m] = series[m] || []).push({ di: xs.indexOf(Number(d)), loss });
+  });
+  Object.values(series).forEach(arr => arr.sort((a,b)=>a.di-b.di));
+
+  const allLoss = Object.values(series).flat().map(p=>p.loss);
+  const hasData = allLoss.length>0;
+  let yMin = hasData ? Math.min(...allLoss) : 0;
+  let yMax = hasData ? Math.max(...allLoss) : 1;
+  if (yMin===yMax){ yMin-=0.5; yMax+=0.5; }
+  const padY = (yMax-yMin)*0.15; yMin-=padY; yMax+=padY;
+  const colY = v => T + (yMax-v)/(yMax-yMin) * (H-T-B);
+
+  let s = '';
+  const TICKS=4;
+  for (let i=0;i<=TICKS;i++){
+    const v = yMin + i*(yMax-yMin)/TICKS;
+    const y = colY(v);
+    s += `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" class="grid-line"/>`;
+    s += `<text x="${L-8}" y="${y+3}" text-anchor="end" class="tick-text">${v.toFixed(2)}</text>`;
+  }
+  xs.forEach((d,i) => {
+    s += `<text x="${colX(i)}" y="${H-B+18}" text-anchor="middle" class="tick-text">${fmtData(d)}</text>`;
+  });
+  s += `<text x="${(L+W-R)/2}" y="${H-6}" text-anchor="middle" class="axis-label">data size</text>`;
+  s += `<text x="14" y="${(T+H-B)/2}" text-anchor="middle" class="axis-label" transform="rotate(-90 14 ${(T+H-B)/2})">performance (loss)</text>`;
+
+  if (!hasData){
+    s += `<text x="${(L+W-R)/2}" y="${(T+H-B)/2}" text-anchor="middle" class="tick-text">No runs yet — pick a config and hit Run.</text>`;
+  }
+
+  Object.entries(series).forEach(([m, arr]) => {
+    if (state.hidden.has(m)) return;
+    const c = modelColor[m];
+    if (arr.length>1){
+      const dpath = arr.map((p,i)=> (i?'L':'M') + colX(p.di) + ' ' + colY(p.loss)).join(' ');
+      s += `<path d="${dpath}" fill="none" stroke="${c}" stroke-width="2.5" stroke-linejoin="round"/>`;
+    }
+    arr.forEach(p => {
+      s += `<circle class="pt" cx="${colX(p.di)}" cy="${colY(p.loss)}" r="4.5" fill="${c}" stroke="#ffffff" stroke-width="1.6"><title>${m} · ${fmtData(xs[p.di])} → loss ${p.loss}</title></circle>`;
+    });
+  });
+
+  svg.innerHTML = s;
+}
+
+/* =====================================================================
+   RENDER: legend (choose which lines to show)
+   ===================================================================== */
+function renderLegend(){
+  const el = document.getElementById('legend');
+  el.innerHTML = '';
+  PARAMS.allowedModelSizes.forEach(m => {
+    const off = state.hidden.has(m);
+    const label = document.createElement('label');
+    label.className = off ? 'off' : '';
+    label.innerHTML = `<input type="checkbox" ${off?'':'checked'}>
+      <span class="swatch" style="background:${modelColor[m]}"></span>${m}`;
+    label.querySelector('input').onchange = (e) => {
+      if (e.target.checked) state.hidden.delete(m); else state.hidden.add(m);
+      render();
+    };
+    el.appendChild(label);
+  });
+}
+
+/* =====================================================================
+   DOWNLOAD: render table + figure to a single PNG (self-contained,
+   drawn on a <canvas> — no external libraries).
+   ===================================================================== */
+function buildSeries(){
+  const xs = PARAMS.allowedDataSizes;
+  const series = {};
+  Object.entries(state.runs).forEach(([key,loss]) => {
+    if (loss==null) return;
+    const [m,d] = key.split('|');
+    (series[m] = series[m] || []).push({ di: xs.indexOf(Number(d)), loss });
+  });
+  Object.values(series).forEach(arr => arr.sort((a,b)=>a.di-b.di));
+  return series;
+}
+
+function downloadResultsImage(){
+  const xs = PARAMS.allowedDataSizes, ms = PARAMS.allowedModelSizes;
+  const SCALE = 2;                       // crisp on retina
+  const pad = 26, headW = 96, cellW = 92, cellH = 34;
+  const tableW = headW + xs.length*cellW;
+  const tableH = (ms.length+1)*cellH;
+  const chartW = Math.max(tableW, 480), chartH = 300;
+  const labelH = 22, gap = 26, titleH = 34;
+  const contentW = Math.max(tableW, chartW);
+  const W = pad*2 + contentW;
+  const H = pad*2 + titleH + labelH + tableH + gap + labelH + chartH;
+
+  const cv = document.createElement('canvas');
+  cv.width = W*SCALE; cv.height = H*SCALE;
+  const ctx = cv.getContext('2d');
+  ctx.scale(SCALE, SCALE);
+  const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
+
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,W,H);
+
+  // ---- title ----
+  let y = pad;
+  ctx.fillStyle = '#1f2a3a'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = `700 20px ${FONT}`;
+  ctx.fillText(IMG_TITLE, pad, y+19);
+  y += titleH;
+
+  // ---- table ----
+  ctx.fillStyle = '#1f2a3a'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = `700 14px ${FONT}`;
+  ctx.fillText('Table of results', pad, y+15);
+  y += labelH;
+
+  const drawCell = (x,yy,w,h,text,bg,fg,bold,align) => {
+    ctx.fillStyle = bg; ctx.fillRect(x,yy,w,h);
+    ctx.strokeStyle = '#dce3ee'; ctx.lineWidth = 1; ctx.strokeRect(x+0.5,yy+0.5,w,h);
+    ctx.fillStyle = fg; ctx.font = `${bold?'600':'400'} 13px ${FONT}`;
+    ctx.textBaseline = 'middle';
+    if (align==='left'){ ctx.textAlign='left'; ctx.fillText(text, x+12, yy+h/2); }
+    else { ctx.textAlign='center'; ctx.fillText(text, x+w/2, yy+h/2); }
+  };
+
+  const tx = pad;
+  drawCell(tx, y, headW, cellH, 'model ＼ data', '#eef2f8', '#6b7890', true, 'left');
+  xs.forEach((d,i) => drawCell(tx+headW+i*cellW, y, cellW, cellH, fmtData(d), '#f4f7fb', '#6b7890', true, 'center'));
+  ms.forEach((m,r) => {
+    const ry = y + (r+1)*cellH;
+    drawCell(tx, ry, headW, cellH, m, '#f4f7fb', '#1f2a3a', true, 'left');
+    xs.forEach((d,i) => {
+      const key = m+'|'+d, cx = tx+headW+i*cellW;
+      let txt = '·', col = '#c2ccdb';
+      if (key in state.runs){ const v = state.runs[key]; txt = v==null ? '—' : String(v); col = '#159a72'; }
+      drawCell(cx, ry, cellW, cellH, txt, '#ffffff', col, true, 'center');
+    });
+  });
+  y += tableH + gap;
+
+  // ---- chart label ----
+  ctx.fillStyle = '#1f2a3a'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = `700 14px ${FONT}`;
+  ctx.fillText('Result figure', pad, y+15);
+  y += labelH;
+
+  // ---- chart ----
+  drawChartCanvas(ctx, pad, y, chartW, chartH, FONT);
+
+  // ---- export ----
+  const d = new Date();
+  const p2 = n => String(n).padStart(2,'0');
+  const stamp = `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}`;
+  const a = document.createElement('a');
+  a.href = cv.toDataURL('image/png');
+  a.download = `${PARAMS.imageFileName}_${stamp}.png`;
+  a.click();
+}
+
+function drawChartCanvas(ctx, ox, oy, W, H, FONT){
+  const L=52,R=18,T=18,B=44;
+  const xs = PARAMS.allowedDataSizes;
+  const plotL=ox+L, plotR=ox+W-R, plotT=oy+T, plotB=oy+H-B;
+  const colX = i => plotL + (xs.length===1 ? (plotR-plotL)/2 : i*(plotR-plotL)/(xs.length-1));
+
+  const series = buildSeries();
+  const allLoss = Object.entries(series)
+    .filter(([m]) => !state.hidden.has(m))
+    .flatMap(([,arr]) => arr.map(p=>p.loss));
+  const visible = allLoss.length>0;
+  let yMin = visible ? Math.min(...allLoss) : 0;
+  let yMax = visible ? Math.max(...allLoss) : 1;
+  if (yMin===yMax){ yMin-=0.5; yMax+=0.5; }
+  const padY=(yMax-yMin)*0.15; yMin-=padY; yMax+=padY;
+  const colY = v => plotT + (yMax-v)/(yMax-yMin)*(plotB-plotT);
+
+  // grid + y ticks
+  const TICKS=4;
+  ctx.textBaseline='middle';
+  for (let i=0;i<=TICKS;i++){
+    const v = yMin + i*(yMax-yMin)/TICKS, yy = colY(v);
+    ctx.strokeStyle='#dce3ee'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(plotL, yy); ctx.lineTo(plotR, yy); ctx.stroke();
+    ctx.fillStyle='#6b7890'; ctx.font=`10px ${FONT}`; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(2), plotL-8, yy);
+  }
+  // x ticks
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  xs.forEach((d,i)=>{ ctx.fillStyle='#6b7890'; ctx.font=`10px ${FONT}`; ctx.fillText(fmtData(d), colX(i), plotB+18); });
+  // axis labels
+  ctx.fillStyle='#6b7890'; ctx.font=`11px ${FONT}`;
+  ctx.fillText('data size', (plotL+plotR)/2, oy+H-6);
+  ctx.save();
+  ctx.translate(ox+14, (plotT+plotB)/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('performance (loss)', 0, 0);
+  ctx.restore();
+
+  // lines + points
+  Object.entries(series).forEach(([m, arr]) => {
+    if (state.hidden.has(m)) return;
+    const c = modelColor[m];
+    if (arr.length>1){
+      ctx.strokeStyle=c; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.beginPath();
+      arr.forEach((p,i)=>{ const X=colX(p.di), Y=colY(p.loss); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); });
+      ctx.stroke();
+    }
+    arr.forEach(p=>{
+      ctx.beginPath(); ctx.arc(colX(p.di), colY(p.loss), 4.5, 0, Math.PI*2);
+      ctx.fillStyle=c; ctx.fill();
+      ctx.strokeStyle='#ffffff'; ctx.lineWidth=1.6; ctx.stroke();
+    });
+  });
+}
+
+document.getElementById('download-btn').onclick = downloadResultsImage;
+
+/* =====================================================================
+   MASTER RENDER
+   ===================================================================== */
+function render(){
+  document.getElementById('data-value').textContent  = fmtData(curData());
+  document.getElementById('model-value').textContent = curModel();
+  document.getElementById('data-up').disabled    = state.dataIdx >= PARAMS.allowedDataSizes.length-1;
+  document.getElementById('data-down').disabled  = state.dataIdx <= 0;
+  document.getElementById('model-up').disabled   = state.modelIdx >= PARAMS.allowedModelSizes.length-1;
+  document.getElementById('model-down').disabled = state.modelIdx <= 0;
+  const ran = (curModel()+'|'+curData()) in state.runs;
+  document.getElementById('run-note').textContent = ran ? '✓ already in table' : 'not yet run';
+
+  // enable download once `downloadThreshold` cells have been run
+  const total = PARAMS.allowedModelSizes.length * PARAMS.allowedDataSizes.length;
+  const need = Math.min(PARAMS.downloadThreshold, total);
+  let done = 0;
+  PARAMS.allowedModelSizes.forEach(m => PARAMS.allowedDataSizes.forEach(d => {
+    if ((m+'|'+d) in state.runs) done++;
+  }));
+  const dl = document.getElementById('download-btn');
+  dl.disabled = done < need;
+  dl.innerHTML = done < need
+    ? `<span class="reload">⤓</span> Download <small>· ${done}/${need} cells run</small>`
+    : `<span class="reload">⤓</span> Download PNG <small>· table + figure</small>`;
+
+  renderBoxes();
+  renderNet();
+  renderTable();
+  renderLegend();
+  renderChart();
+}
+
+render();
+</script>
+</body>
+</html>
