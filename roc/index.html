@@ -310,26 +310,37 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
   <div class="guide-stage" id="guide-stage">
 
-    <!-- Slide 1 · Title -->
+    <!-- Slide 1 · Opening — AI predicts, why we evaluate beyond accuracy -->
     <section class="slide slide-title" data-i="1">
       <div class="slide-fig">
-        <svg viewBox="0 0 200 150" role="img" aria-label="An ROC curve">
-          <line x1="34" y1="14" x2="34" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
-          <line x1="34" y1="120" x2="182" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
-          <line x1="34" y1="120" x2="182" y2="14" stroke="#4a4a5a" stroke-width="1" stroke-dasharray="4 4"/>
-          <path d="M34,120 Q44,34 182,14" fill="none" stroke="#2e86c1" stroke-width="2.4" stroke-linejoin="round"/>
-          <circle cx="41" cy="20" r="4.5" fill="#27ae60" stroke="#fff" stroke-width="1.5"/>
-          <text x="48" y="20" font-size="8" fill="#27ae60">better ↖</text>
-          <text x="108" y="63" font-size="7.5" fill="#4a4a5a" text-anchor="middle" transform="rotate(-36 108 63)">random model</text>
-          <text x="14" y="72" font-size="8" fill="#4a4a5a" transform="rotate(-90 14 72)">TPR</text>
-          <text x="108" y="140" font-size="8" fill="#4a4a5a" text-anchor="middle">FPR</text>
+        <svg viewBox="0 0 240 116" role="img" aria-label="Accuracy can mislead when one class is rare">
+          <circle cx="22" cy="24" r="6" fill="#5a6a7e"/><circle cx="40" cy="24" r="6" fill="#5a6a7e"/>
+          <circle cx="58" cy="24" r="6" fill="#5a6a7e"/><circle cx="76" cy="24" r="6" fill="#5a6a7e"/>
+          <circle cx="94" cy="24" r="6" fill="#5a6a7e"/><circle cx="112" cy="24" r="6" fill="#d94040"/>
+          <circle cx="130" cy="24" r="6" fill="#5a6a7e"/><circle cx="148" cy="24" r="6" fill="#5a6a7e"/>
+          <circle cx="166" cy="24" r="6" fill="#5a6a7e"/><circle cx="184" cy="24" r="6" fill="#5a6a7e"/>
+          <circle cx="202" cy="24" r="6" fill="#5a6a7e"/><circle cx="220" cy="24" r="6" fill="#5a6a7e"/>
+          <text x="121" y="47" font-size="8.5" fill="#4a4a5a" text-anchor="middle">model predicts “healthy” for everyone</text>
+          <rect x="40" y="60" width="72" height="42" rx="7" fill="rgba(39,174,96,.10)"/>
+          <text x="76" y="81" font-size="14" font-weight="700" fill="#27ae60" text-anchor="middle">92%</text>
+          <text x="76" y="94" font-size="7.5" fill="#27ae60" text-anchor="middle">“accuracy” ✓</text>
+          <rect x="130" y="60" width="72" height="42" rx="7" fill="rgba(231,76,60,.10)"/>
+          <text x="166" y="81" font-size="14" font-weight="700" fill="#e74c3c" text-anchor="middle">0</text>
+          <text x="166" y="94" font-size="7.5" fill="#e74c3c" text-anchor="middle">cancers caught ✗</text>
         </svg>
       </div>
       <div class="slide-eyebrow">Before you start · a quick walkthrough</div>
       <h2>How to read an <em>ROC curve</em><br>— and how to use this page</h2>
       <p>
-        This activity shows how an AI cancer-risk model becomes a yes/no decision, and how the ROC curve
-        grades that model across <em>every</em> possible decision. Five short slides, then you&nbsp;try&nbsp;it.
+        AI turns each patient's data — a mammogram — into a prediction: a cancer-risk score. But how do we
+        know the model is any good? A single <b>accuracy</b> number misleads: it hides <em>which</em> mistake
+        happens — a missed cancer or a false alarm — and whether the model is <b>fair</b> (it can be accurate
+        on average yet perform much worse for some patient groups).
+      </p>
+      <p>
+        So we don't judge on one number. This walkthrough builds three tools, in order — the
+        <b>confusion matrix</b> (to see <em>which</em> errors happen), the <b>ROC curve</b> (across every
+        cutoff), and <b>AUC</b> (the whole model in one score). Then you try it.
       </p>
     </section>
 
