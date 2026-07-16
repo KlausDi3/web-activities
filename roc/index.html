@@ -330,15 +330,15 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </svg>
       </div>
       <div class="slide-eyebrow">Before you start · a quick walkthrough</div>
-      <h2>How to read an <em>ROC curve</em><br>— and how to use this page</h2>
+      <h2>How to <em>evaluate</em> AI</h2>
       <p>
-        AI turns each patient's data — a mammogram — into a prediction: a cancer-risk score. But how do we
+        AI turns each patient's data (say, a mammogram) into a prediction: a cancer-risk score. But how do we
         know the model is any good? A single <b>accuracy</b> number misleads: it hides <em>which</em> mistake
-        happens — a missed cancer or a false alarm — and whether the model is <b>fair</b> (it can be accurate
+        happens (a missed cancer or a false alarm), and whether the model is <b>fair</b> (it can be accurate
         on average yet perform much worse for some patient groups).
       </p>
       <p>
-        So we don't judge on one number. This walkthrough builds three tools, in order — the
+        So we don't judge on one number. This walkthrough builds three tools, in order: the
         <b>confusion matrix</b> (to see <em>which</em> errors happen), the <b>ROC curve</b> (across every
         cutoff), and <b>AUC</b> (the whole model in one score). Then you try it.
       </p>
@@ -392,7 +392,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <h2>You pick a cutoff (the threshold)</h2>
       <p>
         To turn scores into a yes/no call, you draw one line. Patients at or above it are predicted
-        <b>Positive</b> (cancer); below it, <b>Negative</b>. There is no single “right” line — sliding it
+        <b>Positive</b> (cancer); below it, <b>Negative</b>. There is no single “right” line; sliding it
         trades one kind of mistake for the other.
       </p>
     </section>
@@ -422,7 +422,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <div class="slide-eyebrow">Step 3 of 5</div>
       <h2>Every patient lands in one of four boxes</h2>
       <p>
-        Comparing the prediction to the truth gives four outcomes — the <b>confusion matrix</b>. Two are
+        Comparing the prediction to the truth gives four outcomes, the <b>confusion matrix</b>. Two are
         correct (TP, TN); two are mistakes. A <b>False Negative</b> is a cancer the model missed (the
         dangerous error); a <b>False Positive</b> is a false alarm (an unnecessary biopsy and anxiety).
       </p>
@@ -449,11 +449,11 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <div class="slide-eyebrow">Step 4 of 5</div>
       <h2>Each cutoff is one point on the ROC curve</h2>
       <p>
-        Every cutoff gives a <b>different confusion matrix</b> — turn each one into two rates:
-        <b>TPR</b> (share of real cancers caught — vertical) against <b>FPR</b> (share of healthy people
-        wrongly flagged — horizontal). A <b>high</b> cutoff sits bottom-left (few false alarms, misses
+        Every cutoff gives a <b>different confusion matrix</b>. Turn each one into two rates:
+        <b>TPR</b> (share of real cancers caught, vertical) against <b>FPR</b> (share of healthy people
+        wrongly flagged, horizontal). A <b>high</b> cutoff sits bottom-left (few false alarms, misses
         cancers); a <b>low</b> cutoff sits top-right (catches everyone, many false alarms). Sweep the cutoff
-        and each matrix becomes a point — together they trace the whole curve.
+        and each matrix becomes a point; together they trace the whole curve.
       </p>
     </section>
 
@@ -481,7 +481,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         For context, real mammography-AI models score roughly <b>0.61–0.70</b>.
       </p>
       <div class="guide-callout">
-        <b>Why a leader cares:</b> where you draw the line is a business and ethical call — balancing missed
+        <b>Why a leader cares:</b> where you draw the line is a business and ethical call: balancing missed
         cancers against false alarms and overdiagnosis. The same curve can also expose fairness gaps: a model
         that looks strong overall can be near-random for a particular subgroup.
       </div>
@@ -510,7 +510,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </div>
         <div class="guide-ctrl-row">
           <div class="guide-ctrl-key">Bottom four charts</div>
-          <div class="guide-ctrl-desc">Compare model strength by AUC — from a pure-random model to a perfect one.</div>
+          <div class="guide-ctrl-desc">Compare model strength by AUC, from a pure-random model to a perfect one.</div>
         </div>
       </div>
       <p style="margin-top:16px;font-size:.85rem;">Reopen this walkthrough anytime with “How to use this page” in the top bar.</p>
