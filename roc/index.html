@@ -332,15 +332,15 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <div class="slide-eyebrow">Before you start · a quick walkthrough</div>
       <h2>How to <em>evaluate</em> AI</h2>
       <p>
-        AI turns each patient's data (say, a mammogram) into a prediction: a cancer-risk score. But how do we
-        know the model is any good? A single <b>accuracy</b> number misleads: it hides <em>which</em> mistake
-        happens (a missed cancer or a false alarm), and whether the model is <b>fair</b> (it can be accurate
-        on average yet perform much worse for some patient groups).
+        AI turns each patient's data, such as a mammogram, into a prediction: a cancer-risk score. But how
+        do we know the model is any good? A single <b>accuracy</b> number misleads. It hides which
+        kind of mistake happens, a missed cancer or a false alarm, and it hides whether the model is
+        <b>fair</b>: a model can be accurate on average yet perform much worse for some patient groups.
       </p>
       <p>
         So we don't judge on one number. This walkthrough builds three tools, in order: the
-        <b>confusion matrix</b> (to see <em>which</em> errors happen), the <b>ROC curve</b> (across every
-        cutoff), and <b>AUC</b> (the whole model in one score). Then you try it.
+        <b>confusion matrix</b>, to see which errors happen; the <b>ROC curve</b>, across every
+        cutoff; and <b>AUC</b>, the whole model in one score. Then you try it.
       </p>
     </section>
 
@@ -361,11 +361,11 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <div class="slide-eyebrow">Step 1 of 5</div>
       <h2>The model turns each patient into a score</h2>
       <p>
-        A breast-cancer risk model reads each patient's data (e.g., a mammogram) and outputs one number:
+        A breast-cancer risk model reads each patient's data, such as a mammogram, and outputs one number:
         the predicted <b>risk of cancer</b>, from 0 to 1. Higher means more likely cancer.
       </p>
       <div class="guide-legend">
-        <span class="dot" style="background:#5a6a7e"></span><b>grey</b> = truly healthy
+        <span class="dot" style="background:#5a6a7e"></span><b>gray</b> = truly healthy
         <span class="dot" style="background:#d94040"></span><b>red</b> = truly cancer
         <br>the model only sees the score, never the truth.
       </div>
@@ -389,10 +389,10 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </svg>
       </div>
       <div class="slide-eyebrow">Step 2 of 5</div>
-      <h2>You pick a cutoff (the threshold)</h2>
+      <h2>You pick a cutoff, or threshold</h2>
       <p>
         To turn scores into a yes/no call, you draw one line. Patients at or above it are predicted
-        <b>Positive</b> (cancer); below it, <b>Negative</b>. There is no single “right” line; sliding it
+        <b>Positive</b> for cancer; below it, <b>Negative</b>. There is no single “right” line; sliding it
         trades one kind of mistake for the other.
       </p>
     </section>
@@ -423,24 +423,25 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <h2>Every patient lands in one of four boxes</h2>
       <p>
         Comparing the prediction to the truth gives four outcomes, the <b>confusion matrix</b>. Two are
-        correct (TP, TN); two are mistakes. A <b>False Negative</b> is a cancer the model missed (the
-        dangerous error); a <b>False Positive</b> is a false alarm (an unnecessary biopsy and anxiety).
+        correct, TP and TN; two are mistakes. A <b>False Negative</b> is a cancer the model missed, the
+        dangerous error; a <b>False Positive</b> is a false alarm, meaning an unnecessary biopsy and anxiety.
       </p>
     </section>
 
     <!-- Slide 5 · Step 4 -->
     <section class="slide" data-i="5">
       <div class="slide-fig">
-        <svg viewBox="0 0 200 150" role="img" aria-label="Each threshold becomes a point on the ROC curve">
+        <svg viewBox="0 0 200 150" role="img" aria-label="Each threshold becomes a point on the ROC curve — the real staircase from this activity's 20 patients">
           <line x1="34" y1="14" x2="34" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
           <line x1="34" y1="120" x2="182" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
           <line x1="34" y1="120" x2="182" y2="14" stroke="#4a4a5a" stroke-width="1" stroke-dasharray="4 4"/>
-          <polyline points="34,120 46,120 46,60 84,60 84,30 182,14" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
-          <circle cx="46" cy="60" r="4.5" fill="#e67e22" stroke="#fff" stroke-width="1.5"/>
-          <circle cx="84" cy="30" r="4.5" fill="#e67e22" stroke="#fff" stroke-width="1.5"/>
-          <circle cx="150" cy="16" r="4.5" fill="#e67e22" stroke="#fff" stroke-width="1.5"/>
-          <text x="52" y="57" font-size="7.5" fill="#e67e22">high</text>
-          <text x="90" y="28" font-size="7.5" fill="#e67e22">mid</text>
+          <!-- Real ROC staircase from the 20-patient dataset (matches the live #c-roc chart) -->
+          <polyline points="34,120 34,80.2 46.3,80.2 46.3,67 58.7,67 58.7,53.8 71,53.8 71,40.5 83.3,40.5 83.3,27.2 108,27.2 108,14 182,14" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="46.3" cy="80.2" r="4.5" fill="#e67e22" stroke="#fff" stroke-width="1.5"/>
+          <circle cx="71" cy="40.5" r="4.5" fill="#e67e22" stroke="#fff" stroke-width="1.5"/>
+          <circle cx="108" cy="14" r="4.5" fill="#e67e22" stroke="#fff" stroke-width="1.5"/>
+          <text x="52" y="78" font-size="7.5" fill="#e67e22">high</text>
+          <text x="76" y="39" font-size="7.5" fill="#e67e22">mid</text>
           <text x="112" y="12" font-size="7.5" fill="#e67e22">low cutoff</text>
           <text x="14" y="72" font-size="8" fill="#4a4a5a" transform="rotate(-90 14 72)">TPR</text>
           <text x="108" y="140" font-size="8" fill="#4a4a5a" text-anchor="middle">FPR</text>
@@ -449,10 +450,11 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <div class="slide-eyebrow">Step 4 of 5</div>
       <h2>Each cutoff is one point on the ROC curve</h2>
       <p>
-        Every cutoff gives a <b>different confusion matrix</b>. Turn each one into two rates:
-        <b>TPR</b> (share of real cancers caught, vertical) against <b>FPR</b> (share of healthy people
-        wrongly flagged, horizontal). A <b>high</b> cutoff sits bottom-left (few false alarms, misses
-        cancers); a <b>low</b> cutoff sits top-right (catches everyone, many false alarms). Sweep the cutoff
+        Every cutoff gives a <b>different confusion matrix</b>. Turn each one into two rates. <b>TPR</b>, on
+        the vertical axis, is the share of real cancers caught; <b>FPR</b>, on the horizontal axis, is the
+        share of healthy people wrongly flagged. A <b>high</b> cutoff sits at the bottom-left, with few
+        false alarms but many missed cancers; a <b>low</b> cutoff sits at the top-right, catching all
+        cancers but raising many false alarms. Sweep the cutoff
         and each matrix becomes a point; together they trace the whole curve.
       </p>
     </section>
@@ -460,13 +462,15 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
     <!-- Slide 6 · Step 5 -->
     <section class="slide" data-i="6">
       <div class="slide-fig">
-        <svg viewBox="0 0 200 150" role="img" aria-label="AUC is the area under the ROC curve">
+        <svg viewBox="0 0 200 150" role="img" aria-label="AUC is the area under the ROC curve — computed from this activity's 20 patients">
           <line x1="34" y1="14" x2="34" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
           <line x1="34" y1="120" x2="182" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
           <line x1="34" y1="120" x2="182" y2="14" stroke="#4a4a5a" stroke-width="1" stroke-dasharray="4 4"/>
-          <path d="M34,120 L46,120 L46,50 L84,50 L84,26 L182,14 L182,120 Z" fill="rgba(46,134,193,.14)"/>
-          <polyline points="34,120 46,120 46,50 84,50 84,26 182,14" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
-          <text x="112" y="88" font-size="14" font-weight="700" fill="#2e86c1" text-anchor="middle">AUC</text>
+          <!-- Area under the real ROC staircase (AUC = 0.833, matches the live #c-roc chart) -->
+          <path d="M34,120 L34,80.2 L46.3,80.2 L46.3,67 L58.7,67 L58.7,53.8 L71,53.8 L71,40.5 L83.3,40.5 L83.3,27.2 L108,27.2 L108,14 L182,14 L182,120 Z" fill="rgba(46,134,193,.14)"/>
+          <polyline points="34,120 34,80.2 46.3,80.2 46.3,67 58.7,67 58.7,53.8 71,53.8 71,40.5 83.3,40.5 83.3,27.2 108,27.2 108,14 182,14" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
+          <text x="118" y="86" font-size="13" font-weight="700" fill="#2e86c1" text-anchor="middle">AUC</text>
+          <text x="118" y="99" font-size="8" font-weight="700" fill="#2e86c1" text-anchor="middle">0.833</text>
           <text x="108" y="63" font-size="7" fill="#4a4a5a" text-anchor="middle" transform="rotate(-36 108 63)">random model</text>
           <text x="14" y="72" font-size="8" fill="#4a4a5a" transform="rotate(-90 14 72)">TPR</text>
           <text x="108" y="140" font-size="8" fill="#4a4a5a" text-anchor="middle">FPR</text>
@@ -475,10 +479,10 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <div class="slide-eyebrow">Step 5 of 5</div>
       <h2>AUC packs the whole curve into one number</h2>
       <p>
-        The <b>Area Under the ROC Curve</b> (AUC, also written AUROC) summarises the model across every possible cutoff.
-        <b>0.5</b> is a coin flip (the diagonal); <b>1.0</b> is perfect (hugs the top-left corner).
-        Because it doesn't depend on which line you drew, AUC grades the <em>model itself</em>.
-        For context, real mammography-AI models score roughly <b>0.61–0.70</b>.
+        The <b>Area Under the ROC Curve</b>, or AUC, summarizes the model across every possible cutoff; it
+        is also written AUROC. <b>0.5</b> is a coin flip, matching the diagonal; <b>1.0</b> is perfect,
+        hugging the top-left corner. Because it doesn't depend on which line you drew, AUC grades the
+        model itself. For context, real mammography-AI models score roughly <b>0.61–0.70</b>.
       </p>
       <div class="guide-callout">
         <b>Why a leader cares:</b> where you draw the line is a business and ethical call: balancing missed
