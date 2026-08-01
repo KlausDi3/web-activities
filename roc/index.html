@@ -69,8 +69,11 @@ html, body {
 }
 .slider-label-wrap { display: flex; flex-direction: column; gap: 2px; min-width: 180px; }
 .slider-name  { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gray); }
-.slider-val   { font-size: 1.1rem; font-weight: 700; font-family: 'Courier New', monospace; color: var(--orange); line-height: 1; }
+.slider-val   { font-size: 2rem; font-weight: 700; font-family: 'Courier New', monospace; color: var(--orange); line-height: 1; }
 .slider-wrap  { flex: 1; }
+/* Centered threshold readout (replaces the old top slider; user drags the blue bar below) */
+.threshold-readout { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.threshold-hint { font-size: .72rem; font-weight: 400; letter-spacing: .02em; color: var(--gray); text-transform: none; }
 
 input[type=range] {
   -webkit-appearance: none; appearance: none;
@@ -197,7 +200,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 /* ── Model comparison grid ── */
 .model-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   margin-top: 14px;
 }
@@ -251,7 +254,9 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .guide-skip:hover { color: #fff; }
 
 /* Stage holds exactly one visible slide, vertically centred */
-.guide-stage { flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center; padding: 30px 24px; }
+/* align-items: safe center keeps tall slides scrollable from the top instead of
+   clipping the overflow above the viewport; the plain 'center' is the fallback. */
+.guide-stage { flex: 1; overflow-y: auto; display: flex; align-items: center; align-items: safe center; justify-content: center; padding: 30px 24px; }
 .slide { display: none; width: 100%; max-width: 780px; }
 .slide.active { display: block; animation: slide-in .28s ease both; }
 @keyframes slide-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -278,6 +283,64 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 }
 .guide-callout b { color: var(--navy); }
 
+/* Interactive hook quiz (slide 1) */
+.quiz { max-width: 580px; margin: 8px auto 0; text-align: center; }
+.quiz-q { font-size: 1.05rem; color: var(--navy); margin-bottom: 14px; }
+.quiz-opts { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.quiz-opt {
+  border: 1.5px solid var(--mid); background: #fff; color: var(--navy);
+  border-radius: 9px; padding: 10px 22px; font-family: var(--sans); font-size: .95rem; font-weight: 700;
+  cursor: pointer; transition: background .15s, border-color .15s, transform .1s;
+}
+.quiz-opt:hover:not(:disabled) { border-color: var(--blue); transform: translateY(-1px); }
+.quiz-opt:disabled { cursor: default; }
+.quiz-opt.correct { background: rgba(39,174,96,.14); border-color: var(--green); color: var(--green); }
+.quiz-opt.wrong   { background: rgba(231,76,60,.16); border-color: var(--red); color: var(--red); animation: quiz-shake .45s; }
+@keyframes quiz-shake { 0%,100%{transform:translateX(0)} 15%,45%,75%{transform:translateX(-7px)} 30%,60%,90%{transform:translateX(7px)} }
+.quiz.nudge { animation: quiz-nudge .5s; }
+@keyframes quiz-nudge { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+.quiz-fb { min-height: 20px; margin-top: 12px; font-size: .9rem; font-weight: 700; }
+.quiz-fb.ok { color: var(--green); }
+.quiz-fb.no { color: var(--red); }
+.quiz-fb.pop { animation: quiz-fb-pop .45s; }
+@keyframes quiz-fb-pop {
+  0%   { transform: scale(.7);  opacity: 0; }
+  45%  { transform: scale(1.12); opacity: 1; }
+  60%  { transform: scale(1) translateX(-5px); }
+  75%  { transform: translateX(5px); }
+  90%  { transform: translateX(-3px); }
+  100% { transform: none; }
+}
+.quiz-reveal {
+  margin: 12px auto 0; max-width: 620px; text-align: left;
+  background: rgba(46,134,193,.07); border-left: 4px solid var(--blue); border-radius: 8px;
+  padding: 14px 18px; font-size: .92rem; line-height: 1.6; color: var(--gray);
+  animation: slide-in .28s ease both;
+}
+.quiz-reveal b { color: var(--navy); }
+
+/* PPT pipeline screenshot (slide 2 roadmap) */
+.pipeline-fig { margin: 12px auto 0; max-width: 480px; text-align: center; }
+.pipeline-fig img { width: 100%; height: auto; display: block; border: 1px solid var(--mid); border-radius: 8px; background: #fff; }
+.pipeline-fig figcaption { font-size: .78rem; color: var(--gray); margin-top: 6px; }
+
+/* Three model ROC mini-figures (slide 8) */
+.model-row { display: flex; gap: 14px; justify-content: center; align-items: flex-end; margin: 12px auto 4px; max-width: 560px; flex-wrap: wrap; }
+.model-mini { flex: 1 1 130px; max-width: 170px; text-align: center; }
+.model-mini svg { width: 100%; height: auto; }
+
+/* Animated confusion-matrix bridge (slide 7) */
+.roc-anim { max-width: 340px; margin: 10px auto 0; }
+.roc-anim .ra-line { width: 100%; height: auto; }
+.ra-matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 6px; }
+.ra-cell { border-radius: 6px; padding: 5px 4px; text-align: center; }
+.ra-cell span { display: block; text-transform: uppercase; letter-spacing: .04em; color: var(--gray); font-weight: 700; font-size: .6rem; }
+.ra-cell b { font-family: 'Courier New', monospace; font-size: 1.1rem; }
+.ra-cell.tn { background: rgba(142,68,173,.10); } .ra-cell.tn b { color: #8e44ad; }
+.ra-cell.fp { background: rgba(231,76,60,.10); }  .ra-cell.fp b { color: #e74c3c; }
+.ra-cell.fn { background: rgba(230,126,34,.10); } .ra-cell.fn b { color: #e67e22; }
+.ra-cell.tp { background: rgba(39,174,96,.12); }  .ra-cell.tp b { color: #27ae60; }
+
 /* Controls legend (last slide) */
 .guide-controls { max-width: 640px; margin: 4px auto 0; background: #fff; border-radius: 12px; padding: 16px 24px; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
 .guide-ctrl-row { display: flex; gap: 14px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--mid); text-align: left; }
@@ -296,7 +359,8 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 }
 .nav-btn:hover:not(:disabled) { transform: translateY(-1px); }
 .nav-next { background: var(--blue); color: #fff; border: none; }
-.nav-next:hover { opacity: .9; }
+.nav-next:hover:not(:disabled) { opacity: .9; }
+.nav-next:disabled { opacity: .45; cursor: not-allowed; }
 .nav-back { background: #fff; color: var(--navy); border: 1.5px solid var(--mid); }
 .nav-back:disabled { opacity: .35; cursor: not-allowed; }
 .guide-progress { display: flex; flex-direction: column; align-items: center; gap: 7px; }
@@ -332,47 +396,65 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
   <div class="guide-stage" id="guide-stage">
 
-    <!-- Slide 1 · Opening — high accuracy can hide two very different mistakes -->
+    <!-- Slide 1 · Opening — breast-cancer scenario + interactive hook -->
     <section class="slide slide-title" data-i="1">
       <div class="slide-fig">
-        <svg viewBox="0 0 240 116" role="img" aria-label="A model that calls everyone healthy scores 92 percent accuracy but catches no cancer">
-          <circle cx="22" cy="24" r="6" fill="#5a6a7e"/><circle cx="40" cy="24" r="6" fill="#5a6a7e"/>
-          <circle cx="58" cy="24" r="6" fill="#5a6a7e"/><circle cx="76" cy="24" r="6" fill="#5a6a7e"/>
-          <circle cx="94" cy="24" r="6" fill="#5a6a7e"/><circle cx="112" cy="24" r="6" fill="#d94040"/>
-          <circle cx="130" cy="24" r="6" fill="#5a6a7e"/><circle cx="148" cy="24" r="6" fill="#5a6a7e"/>
-          <circle cx="166" cy="24" r="6" fill="#5a6a7e"/><circle cx="184" cy="24" r="6" fill="#5a6a7e"/>
-          <circle cx="202" cy="24" r="6" fill="#5a6a7e"/><circle cx="220" cy="24" r="6" fill="#5a6a7e"/>
-          <text x="121" y="47" font-size="8.5" fill="#4a4a5a" text-anchor="middle">model calls every patient healthy</text>
-          <rect x="40" y="60" width="72" height="42" rx="7" fill="rgba(39,174,96,.10)"/>
-          <text x="76" y="81" font-size="14" font-weight="700" fill="#27ae60" text-anchor="middle">92%</text>
-          <text x="76" y="94" font-size="7.5" fill="#27ae60" text-anchor="middle">accuracy ✓</text>
-          <rect x="130" y="60" width="72" height="42" rx="7" fill="rgba(231,76,60,.10)"/>
-          <text x="166" y="81" font-size="14" font-weight="700" fill="#e74c3c" text-anchor="middle">0</text>
-          <text x="166" y="94" font-size="7.5" fill="#e74c3c" text-anchor="middle">cancers caught ✗</text>
+        <svg viewBox="0 0 280 104" role="img" aria-label="An AI reads a patient's mammogram and turns it into a cancer-risk score from 0 to 1">
+          <!-- patient -->
+          <circle cx="30" cy="34" r="11" fill="#5a6a7e"/>
+          <rect x="15" y="48" width="30" height="20" rx="10" fill="#5a6a7e"/>
+          <text x="30" y="84" font-size="8" fill="#4a4a5a" text-anchor="middle">a patient</text>
+          <!-- arrow -->
+          <line x1="54" y1="52" x2="92" y2="52" stroke="#8899aa" stroke-width="2"/>
+          <polygon points="92,48 100,52 92,56" fill="#8899aa"/>
+          <!-- AI box -->
+          <rect x="104" y="34" width="58" height="36" rx="8" fill="rgba(46,134,193,.12)" stroke="#2e86c1" stroke-width="1.5"/>
+          <text x="133" y="57" font-size="13" font-weight="700" fill="#2e86c1" text-anchor="middle">AI</text>
+          <text x="133" y="84" font-size="8" fill="#4a4a5a" text-anchor="middle">reads the mammogram</text>
+          <!-- arrow -->
+          <line x1="166" y1="52" x2="204" y2="52" stroke="#8899aa" stroke-width="2"/>
+          <polygon points="204,48 212,52 204,56" fill="#8899aa"/>
+          <!-- risk score bar -->
+          <text x="246" y="34" font-size="8" fill="#4a4a5a" text-anchor="middle">cancer-risk score</text>
+          <rect x="220" y="46" width="52" height="8" rx="4" fill="#dce6f0"/>
+          <circle cx="250" cy="50" r="5.5" fill="#e67e22" stroke="#fff" stroke-width="1.5"/>
+          <text x="220" y="70" font-size="7.5" fill="#8899aa" text-anchor="middle">0</text>
+          <text x="272" y="70" font-size="7.5" fill="#8899aa" text-anchor="middle">1</text>
         </svg>
       </div>
-      <div class="slide-eyebrow">Before you start · a quick walkthrough</div>
-      <h2>How to evaluate AI</h2>
+      <div class="slide-eyebrow">Before you start · a 2-minute walkthrough</div>
+      <h2>Your AI claims 92% accuracy. Is that good enough?</h2>
       <p>
-        We all want AI to work well with high accuracy, and to avoid mistakes. But do you know there are
-        <b>two types of mistakes</b> AI can make? Mistakes are not created equal, and this is true of any
-        decision, not just AI.
+        Imagine your company runs <b>breast-cancer screening</b>, and you have built an AI that reads each
+        mammogram and flags who might have cancer. It claims <b>92% accuracy</b>. Before you rely on it, you
+        have to judge it yourself — and to judge any AI, you first need to know how it can go wrong.
       </p>
-      <p>
-        The model above looks accurate. It labels every patient healthy and scores 92%, yet it catches no
-        cancer at all. To evaluate AI we need to see both mistakes, and the tools for weighing them: the
-        confusion matrix, the ROC curve, and AUC.
-      </p>
+      <div class="quiz" id="quiz1">
+        <div class="quiz-q">So, how many <b>types of mistakes</b> can this AI make?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" type="button">1</button>
+          <button class="quiz-opt" type="button" data-correct="1">2</button>
+          <button class="quiz-opt" type="button">3</button>
+          <button class="quiz-opt" type="button">Too many to count</button>
+        </div>
+        <div class="quiz-fb" id="quiz1-fb" aria-live="polite"></div>
+        <div class="quiz-reveal" id="quiz1-reveal" hidden>
+          <b>Exactly — two.</b> The AI can raise a <b>false alarm</b> (flag a healthy patient), or it can
+          <b>miss a real cancer</b>. The two are not equally costly — and telling them apart is what this
+          walkthrough is about. Next, we build the tools to see them: the confusion matrix, the ROC curve, and AUC.
+        </div>
+      </div>
     </section>
 
     <!-- Slide 2 · Step 1 — the risk score -->
     <section class="slide" data-i="2">
       <div class="slide-fig">
-        <svg viewBox="0 0 240 104" role="img" aria-label="Patients placed on a 0-to-1 score line">
-          <circle cx="40" cy="24" r="8" fill="#5a6a7e"/><circle cx="66" cy="24" r="8" fill="#5a6a7e"/>
-          <circle cx="96" cy="24" r="8" fill="#5a6a7e"/><circle cx="150" cy="24" r="8" fill="#5a6a7e"/>
-          <circle cx="112" cy="50" r="8" fill="#d94040"/><circle cx="165" cy="50" r="8" fill="#d94040"/>
-          <circle cx="192" cy="50" r="8" fill="#d94040"/><circle cx="212" cy="50" r="8" fill="#d94040"/>
+        <svg viewBox="0 0 240 104" role="img" aria-label="Ten patients on a 0-to-1 score line: six non-cancer (gray) and four cancer (red)">
+          <circle cx="28.3" cy="24" r="8" fill="#5a6a7e"/><circle cx="48.9" cy="24" r="8" fill="#5a6a7e"/>
+          <circle cx="75.7" cy="24" r="8" fill="#5a6a7e"/><circle cx="116.9" cy="24" r="8" fill="#5a6a7e"/>
+          <circle cx="131.3" cy="24" r="8" fill="#5a6a7e"/><circle cx="172.5" cy="24" r="8" fill="#5a6a7e"/>
+          <circle cx="94.2" cy="50" r="8" fill="#d94040"/><circle cx="158.1" cy="50" r="8" fill="#d94040"/>
+          <circle cx="195.2" cy="50" r="8" fill="#d94040"/><circle cx="213.7" cy="50" r="8" fill="#d94040"/>
           <line x1="18" y1="74" x2="224" y2="74" stroke="#1b2a4a" stroke-width="1.5"/>
           <text x="18" y="90" font-size="9" fill="#4a4a5a" text-anchor="middle">0.0</text>
           <text x="224" y="90" font-size="9" fill="#4a4a5a" text-anchor="middle">1.0</text>
@@ -380,16 +462,20 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </svg>
       </div>
       <div class="slide-eyebrow">Step 1 of 7</div>
-      <h2>What AI does: map each patient to a risk score</h2>
+      <h2>The setup: 10 patients, one score each</h2>
       <p>
-        So what are the two types of mistakes? To answer that, first look at what AI does. Any AI model maps
-        a patient's raw data into a <b>risk score</b>, a single number between 0 and 1 for how risky the
-        patient is. It does not give a yes or no; it just produces the score.
+        Suppose 10 patients come in for screening. In truth <b>4 have cancer and 6 do not</b>, but you don't
+        know which. The AI reads each mammogram and returns one <b>risk score</b> from 0 to 1 — not a yes or
+        no, just the score.
       </p>
       <p>
-        Ideally, healthy patients would score <b>low</b> and cancer patients would score <b>high</b>. In
-        practice the two groups overlap, as the dots above show.
+        Ideally the cancer patients would score <b>high</b> and the healthy ones <b>low</b>. In practice the
+        two groups overlap, as the dots above show.
       </p>
+      <figure class="pipeline-fig">
+        <img src="pipeline.png" alt="The evaluation pipeline: a mammogram goes into the AI model, which outputs a prediction score between 0 and 1; a threshold turns it into cancer or no cancer, then comparison with the ground truth gives True Positive, False Negative, False Positive, or True Negative">
+        <figcaption>The whole pipeline you'll walk through.</figcaption>
+      </figure>
       <div class="guide-legend">
         <span class="dot" style="background:#5a6a7e"></span><b>gray</b> = healthy patient
         <span class="dot" style="background:#d94040"></span><b>red</b> = cancer patient
@@ -415,11 +501,12 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </svg>
       </div>
       <div class="slide-eyebrow">Step 2 of 7</div>
-      <h2>To make the score useful, set a threshold</h2>
+      <h2>Draw a line: set the threshold</h2>
       <p>
-        A risk score on its own is not yet useful. To act on it, a clinician or decision-maker sets a
-        <b>threshold</b>, also called a cutoff. If a patient's score is at or above the threshold, the model
-        predicts cancer; otherwise it predicts no cancer.
+        You now have a score for every patient, but a score by itself does not tell you who has cancer. To
+        decide, you <b>draw a line</b>, called the <b>threshold</b>. Patients at or above the line are called
+        cancer; those below it are called clear. There is no single right place for the line, and moving it
+        changes who gets called back.
       </p>
     </section>
 
@@ -447,11 +534,11 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <div class="slide-eyebrow">Step 3 of 7</div>
       <h2>The two types of mistakes</h2>
       <p>
-        With the threshold set, AI can make two types of mistakes. A patient who has <b>no cancer</b> but
-        scores above the threshold is classified as high risk, a <b>False Positive</b> or false alarm. A
-        patient who <b>has cancer</b> but scores below the threshold is predicted as no cancer, a
-        <b>False Negative</b> or missed cancer. The missed cancer is the more serious mistake; a false alarm
-        leads to an unnecessary biopsy and anxiety.
+        <b>Remember the question we opened with</b> — how many types of mistakes can the AI make? Now that a
+        threshold is set, here they are, and there are two. A patient who has <b>no cancer</b> but scores
+        above the threshold is flagged as high risk, a <b>False Positive</b> or false alarm. A patient who
+        <b>has cancer</b> but scores below the threshold is called clear, a <b>False Negative</b> or missed
+        cancer. The missed cancer is the more serious mistake; a false alarm leads to an unnecessary biopsy and anxiety.
       </p>
     </section>
 
@@ -515,54 +602,62 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </svg>
       </div>
       <div class="slide-eyebrow">Step 5 of 7</div>
-      <h2>A higher threshold trades one mistake for the other</h2>
+      <h2>The two errors have names: Type 1 and Type 2</h2>
       <p>
-        If you set the threshold <b>very high</b>, you set a high bar: you reduce the <b>Type 1 error</b>, the
-        false positive, but you increase the <b>Type 2 error</b>, the false negative. Set the threshold
-        <b>low</b> and the reverse happens, catching almost every cancer at the cost of many false alarms.
-        Lowering one mistake raises the other.
+        <b>Type 1 error</b> = a <b>False Positive</b>: a false alarm, a healthy patient flagged as cancer.<br>
+        <b>Type 2 error</b> = a <b>False Negative</b>: a miss, a real cancer called clear.
       </p>
+      <p>
+        Now the trade-off. Set the threshold <b>very high</b> and you reduce Type 1 errors, the false alarms,
+        but increase Type 2 errors, the missed cancers. Set it <b>low</b> and the reverse happens. Lowering
+        one raises the other — and in screening, the Type 2 miss is the one that can cost a life.
+      </p>
+      <div class="guide-callout">
+        On the confusion matrix, the <b>False Positive</b> sits top-right (Type 1) and the <b>False
+        Negative</b> bottom-left (Type 2) — a handy way to keep the two straight.
+      </div>
     </section>
 
     <!-- Slide 7 · Step 6 — the ROC curve -->
     <section class="slide" data-i="7">
-      <div class="slide-fig">
-        <svg viewBox="0 0 200 150" role="img" aria-label="Each threshold becomes a point on the ROC curve — the real staircase from this activity's 20 patients">
-          <line x1="34" y1="14" x2="34" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
-          <line x1="34" y1="120" x2="182" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
-          <line x1="34" y1="120" x2="182" y2="14" stroke="#4a4a5a" stroke-width="1" stroke-dasharray="4 4"/>
-          <!-- Real ROC staircase from the 20-patient dataset (matches the live #c-roc chart) -->
-          <polyline points="34,120 34,80.2 46.3,80.2 46.3,67 58.7,67 58.7,53.8 71,53.8 71,40.5 83.3,40.5 83.3,27.2 108,27.2 108,14 182,14" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
-          <circle cx="46.3" cy="80.2" r="4.5" fill="#e67e22" stroke="#fff" stroke-width="1.5"/>
-          <circle cx="71" cy="40.5" r="4.5" fill="#e67e22" stroke="#fff" stroke-width="1.5"/>
-          <circle cx="108" cy="14" r="4.5" fill="#e67e22" stroke="#fff" stroke-width="1.5"/>
-          <text x="52" y="78" font-size="7.5" fill="#e67e22">high</text>
-          <text x="76" y="39" font-size="7.5" fill="#e67e22">mid</text>
-          <text x="112" y="12" font-size="7.5" fill="#e67e22">low threshold</text>
-          <text x="14" y="72" font-size="8" fill="#4a4a5a" transform="rotate(-90 14 72)">TPR</text>
-          <text x="108" y="140" font-size="8" fill="#4a4a5a" text-anchor="middle">FPR</text>
-        </svg>
-      </div>
       <div class="slide-eyebrow">Step 6 of 7</div>
-      <h2>Each threshold is one point on the ROC curve</h2>
+      <h2>Every threshold gives a different confusion matrix</h2>
       <p>
-        That is where the ROC curve comes in. It shows, under every different threshold, how the
-        <b>True Positive Rate</b>, the share of real cancers caught, and the <b>False Positive Rate</b>, the
-        share of healthy patients wrongly flagged, change together. Sweeping through all the thresholds, each
-        one becomes a point, and together they trace the ROC curve.
+        The confusion matrix depends on the threshold. Watch below: as the threshold <b>slides from 1 down to
+        0</b>, the four counts keep changing. Every setting gives a different matrix — so no single threshold
+        is "the model." To judge the whole model, we need to look across <b>all</b> thresholds at once.
       </p>
+      <div class="roc-anim" id="roc-anim">
+        <svg viewBox="0 0 260 78" class="ra-line" role="img" aria-label="Ten patients on a score line with a threshold sweeping across them">
+          <line x1="20" y1="40" x2="240" y2="40" stroke="#1b2a4a" stroke-width="1.2"/>
+          <circle cx="31" cy="24" r="5" fill="#5a6a7e"/><circle cx="53" cy="24" r="5" fill="#5a6a7e"/>
+          <circle cx="81.6" cy="24" r="5" fill="#5a6a7e"/><circle cx="125.6" cy="24" r="5" fill="#5a6a7e"/>
+          <circle cx="141" cy="24" r="5" fill="#5a6a7e"/><circle cx="185" cy="24" r="5" fill="#5a6a7e"/>
+          <circle cx="101.4" cy="56" r="5" fill="#d94040"/><circle cx="169.6" cy="56" r="5" fill="#d94040"/>
+          <circle cx="209.2" cy="56" r="5" fill="#d94040"/><circle cx="229" cy="56" r="5" fill="#d94040"/>
+          <line id="ra-thr" x1="130" y1="14" x2="130" y2="66" stroke="#2e86c1" stroke-width="3" stroke-linecap="round"/>
+          <text x="20" y="74" font-size="7" fill="#8899aa" text-anchor="middle">0</text>
+          <text x="240" y="74" font-size="7" fill="#8899aa" text-anchor="middle">1</text>
+        </svg>
+        <div class="ra-matrix">
+          <div class="ra-cell tn"><span>True Neg</span><b id="ra-tn">4</b></div>
+          <div class="ra-cell fp"><span>False Pos</span><b id="ra-fp">2</b></div>
+          <div class="ra-cell fn"><span>False Neg</span><b id="ra-fn">1</b></div>
+          <div class="ra-cell tp"><span>True Pos</span><b id="ra-tp">3</b></div>
+        </div>
+      </div>
     </section>
 
     <!-- Slide 8 · Step 7 — AUC -->
     <section class="slide" data-i="8">
       <div class="slide-fig">
-        <svg viewBox="0 0 200 150" role="img" aria-label="AUC is the area under the ROC curve — computed from this activity's 20 patients">
+        <svg viewBox="0 0 200 150" role="img" aria-label="AUC is the area under the ROC curve — computed from this activity's 10 patients">
           <line x1="34" y1="14" x2="34" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
           <line x1="34" y1="120" x2="182" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
           <line x1="34" y1="120" x2="182" y2="14" stroke="#4a4a5a" stroke-width="1" stroke-dasharray="4 4"/>
           <!-- Area under the real ROC staircase (AUC = 0.833, matches the live #c-roc chart) -->
-          <path d="M34,120 L34,80.2 L46.3,80.2 L46.3,67 L58.7,67 L58.7,53.8 L71,53.8 L71,40.5 L83.3,40.5 L83.3,27.2 L108,27.2 L108,14 L182,14 L182,120 Z" fill="rgba(46,134,193,.14)"/>
-          <polyline points="34,120 34,80.2 46.3,80.2 46.3,67 58.7,67 58.7,53.8 71,53.8 71,40.5 83.3,40.5 83.3,27.2 108,27.2 108,14 182,14" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M34,120 L34,67 L58.7,67 L58.7,40.5 L108,40.5 L108,14 L182,14 L182,120 Z" fill="rgba(46,134,193,.14)"/>
+          <polyline points="34,120 34,67 58.7,67 58.7,40.5 108,40.5 108,14 182,14" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
           <text x="118" y="86" font-size="13" font-weight="700" fill="#2e86c1" text-anchor="middle">AUC</text>
           <text x="118" y="99" font-size="8" font-weight="700" fill="#2e86c1" text-anchor="middle">0.833</text>
           <text x="108" y="63" font-size="7" fill="#4a4a5a" text-anchor="middle" transform="rotate(-36 108 63)">random model</text>
@@ -571,17 +666,55 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </svg>
       </div>
       <div class="slide-eyebrow">Step 7 of 7</div>
-      <h2>AUC summarizes the whole curve in one number</h2>
+      <h2>The ROC curve, and its area (AUC)</h2>
       <p>
-        The <b>Area Under the ROC Curve</b>, or AUC, summarizes performance across every threshold in a single
-        number. <b>0.5</b> matches the diagonal, no better than a coin flip; <b>1.0</b> is perfect and hugs
-        the top-left corner. Because AUC does not depend on any one threshold, it grades the model itself. For
-        reference, mammography AI models score roughly <b>0.61 to 0.70</b>.
+        Turn each threshold into a point: the <b>True Positive Rate</b> (cancers caught) up the side, the
+        <b>False Positive Rate</b> (healthy patients flagged) across the bottom. Sweep every threshold and the
+        points trace the <b>ROC curve</b> above. The <b>area under it</b>, the <b>AUC</b>, is one number for
+        the whole curve: <b>0.5</b> is a coin flip (the diagonal), <b>1.0</b> is perfect (hugs the top-left).
+        Because AUC does not depend on any single threshold, it judges the <b>model itself</b> — mammography
+        AI models score roughly <b>0.61 to 0.70</b>.
+      </p>
+      <div class="model-row">
+        <div class="model-mini">
+          <svg viewBox="0 0 100 100" role="img" aria-label="Good model ROC curve, AUC 0.75">
+            <line x1="22" y1="12" x2="22" y2="78" stroke="#1b2a4a" stroke-width="1"/>
+            <line x1="22" y1="78" x2="92" y2="78" stroke="#1b2a4a" stroke-width="1"/>
+            <line x1="22" y1="78" x2="92" y2="12" stroke="#4a4a5a" stroke-width=".8" stroke-dasharray="3 3"/>
+            <polyline points="22,78 22,69.8 27.8,69.8 27.8,61.5 33.7,61.5 33.7,53.2 39.5,53.2 39.5,36.8 45.3,36.8 45.3,28.5 51.2,28.5 51.2,20.2 57,20.2 57,12 92,12" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
+            <text x="57" y="94" font-size="8" font-weight="700" fill="#4a4a5a" text-anchor="middle">Good · AUC 0.75</text>
+          </svg>
+        </div>
+        <div class="model-mini">
+          <svg viewBox="0 0 100 100" role="img" aria-label="Better model ROC curve, AUC 0.90">
+            <line x1="22" y1="12" x2="22" y2="78" stroke="#1b2a4a" stroke-width="1"/>
+            <line x1="22" y1="78" x2="92" y2="78" stroke="#1b2a4a" stroke-width="1"/>
+            <line x1="22" y1="78" x2="92" y2="12" stroke="#4a4a5a" stroke-width=".8" stroke-dasharray="3 3"/>
+            <polyline points="22,78 22,53.2 27.8,53.2 27.8,36.8 33.7,36.8 33.7,20.2 39.5,20.2 45.3,20.2 45.3,12 92,12" fill="none" stroke="#16a085" stroke-width="2" stroke-linejoin="round"/>
+            <text x="57" y="94" font-size="8" font-weight="700" fill="#4a4a5a" text-anchor="middle">Better · AUC 0.90</text>
+          </svg>
+        </div>
+        <div class="model-mini">
+          <svg viewBox="0 0 100 100" role="img" aria-label="Perfect model ROC curve, AUC 1.00">
+            <line x1="22" y1="12" x2="22" y2="78" stroke="#1b2a4a" stroke-width="1"/>
+            <line x1="22" y1="78" x2="92" y2="78" stroke="#1b2a4a" stroke-width="1"/>
+            <line x1="22" y1="78" x2="92" y2="12" stroke="#4a4a5a" stroke-width=".8" stroke-dasharray="3 3"/>
+            <polyline points="22,78 22,12 92,12" fill="none" stroke="#27ae60" stroke-width="2" stroke-linejoin="round"/>
+            <text x="57" y="94" font-size="8" font-weight="700" fill="#4a4a5a" text-anchor="middle">Perfect · AUC 1.00</text>
+          </svg>
+        </div>
+      </div>
+      <p style="font-size:.85rem;text-align:center;margin-top:2px;">A stronger model bows further toward the top-left, and its AUC is higher.</p>
+      <p>
+        So the order is: <b>first pick the model</b> by comparing ROC curves and AUC, <b>then</b> set that
+        model's threshold based on which mistake is costlier. Choosing the model and choosing the threshold
+        are two separate decisions.
       </p>
       <div class="guide-callout">
-        <b>Why this matters to a leader:</b> choosing the threshold is a business and ethical decision, weighing
-        missed cancers against false alarms and overdiagnosis. The same curve can also reveal fairness gaps,
-        where a model that looks strong overall performs near-randomly for a particular subgroup.
+        <b>Why this matters to a leader:</b> the two errors are not equal, so put a real cost on each — the
+        dollars and the human cost of a <b>missed cancer</b> versus a <b>false alarm</b>. That cost is what
+        tells you where to set the threshold. The same curve can also reveal fairness gaps, where a model that
+        looks strong overall performs near-randomly for a particular subgroup.
       </div>
     </section>
 
@@ -591,8 +724,8 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <h2>Using this page</h2>
       <div class="guide-controls">
         <div class="guide-ctrl-row">
-          <div class="guide-ctrl-key">Threshold slider</div>
-          <div class="guide-ctrl-desc">Drag the threshold line. The four matrix counts and the orange dot update as you move it.</div>
+          <div class="guide-ctrl-key">Blue threshold line</div>
+          <div class="guide-ctrl-desc">Drag the blue line on the patient strip. The four matrix counts and the orange dot update as you move it.</div>
         </div>
         <div class="guide-ctrl-row">
           <div class="guide-ctrl-key">▶ Animate</div>
@@ -600,15 +733,15 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </div>
         <div class="guide-ctrl-row">
           <div class="guide-ctrl-key">↺ Reset</div>
-          <div class="guide-ctrl-desc">Returns the threshold to 0.50 and reloads the 20-patient case study.</div>
+          <div class="guide-ctrl-desc">Returns the threshold to 0.50 and reloads the 10-patient case study.</div>
         </div>
         <div class="guide-ctrl-row">
           <div class="guide-ctrl-key">Orange dot</div>
           <div class="guide-ctrl-desc">Marks where your current threshold sits on the ROC curve.</div>
         </div>
         <div class="guide-ctrl-row">
-          <div class="guide-ctrl-key">Bottom four charts</div>
-          <div class="guide-ctrl-desc">Click any of the four models to load its data into the charts above and compare. Use "Back to case study" to return to the 20-patient example.</div>
+          <div class="guide-ctrl-key">Bottom three charts</div>
+          <div class="guide-ctrl-desc">Click any of the three models to load its data into the charts above and compare. Use "Back to case study" to return to the 10-patient example.</div>
         </div>
       </div>
       <p style="margin-top:16px;font-size:.85rem;">Reopen this walkthrough anytime with “How to use this page” in the top bar.</p>
@@ -643,12 +776,10 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
   <!-- Controls row -->
   <div class="slider-card">
-    <div class="slider-label-wrap">
+    <div class="threshold-readout">
       <span class="slider-name">Classification Threshold</span>
       <span class="slider-val" id="lbl-t">0.50</span>
-    </div>
-    <div class="slider-wrap">
-      <input type="range" id="sl-t" min="0" max="1" step="0.005" value="0.5">
+      <span class="threshold-hint">↓ drag the blue line on the patient strip to move it</span>
     </div>
     <button class="btn-animate" id="btn-animate">▶ Animate</button>
     <button class="btn-reset"   id="btn-reset">↺ Reset</button>
@@ -656,7 +787,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
   <!-- Patient strip -->
   <div class="patient-card">
-    <div class="card-title" id="patient-strip-title">20-Patient Case Study · AI Risk Scores</div>
+    <div class="card-title" id="patient-strip-title">10-Patient Case Study · AI Risk Scores</div>
     <canvas id="c-patients"></canvas>
   </div>
 
@@ -748,11 +879,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
   </div>
   <div class="model-grid">
     <div class="card">
-      <div class="card-title">Pure Random Model</div>
-      <canvas class="model-canvas" id="mc-random"></canvas>
-      <div class="model-auc">AUC = <strong id="mc-random-auc">—</strong></div>
-    </div>
-    <div class="card">
       <div class="card-title">Good Model</div>
       <canvas class="model-canvas" id="mc-good"></canvas>
       <div class="model-auc">AUC = <strong id="mc-good-auc">—</strong></div>
@@ -772,21 +898,19 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 </div>
 
 <script>
-// ── Fixed 20-patient dataset (single source of truth) ────
+// ── Fixed 10-patient dataset (single source of truth) ────
+// 10-patient case study — exact scores + ground-truth labels from the course PPT
+// (Model evaluation-Part 1, slides 8-9). 6 non-cancer, 4 cancer. AUC = 0.833;
+// at threshold 0.5 → TP=3, FP=2, FN=1, TN=4 (matches the PPT).
 const gordPatients = [
-  // Non-Cancer (GT=0) — 12 patients
-  {label:0,score:0.05},{label:0,score:0.09},{label:0,score:0.14},
-  {label:0,score:0.19},{label:0,score:0.24},{label:0,score:0.29},
-  {label:0,score:0.34},{label:0,score:0.42},{label:0,score:0.52},
-  {label:0,score:0.61},{label:0,score:0.69},{label:0,score:0.76},
-  // Cancer (GT=1) — 8 patients
-  {label:1,score:0.33},{label:1,score:0.44},
-  {label:1,score:0.55},{label:1,score:0.63},
-  {label:1,score:0.71},{label:1,score:0.80},
-  {label:1,score:0.87},{label:1,score:0.94},
+  // Non-Cancer (GT=0) — 6 patients
+  {label:0,score:0.05},{label:0,score:0.15},{label:0,score:0.28},
+  {label:0,score:0.48},{label:0,score:0.55},{label:0,score:0.75},
+  // Cancer (GT=1) — 4 patients
+  {label:1,score:0.37},{label:1,score:0.68},{label:1,score:0.86},{label:1,score:0.95},
 ];
 
-// Active dataset the main view draws. Defaults to the 20-patient case study;
+// Active dataset the main view draws. Defaults to the 10-patient case study;
 // clicking a model card below (C1) swaps in that model's patients.
 let activeData = gordPatients;
 
@@ -811,7 +935,7 @@ function calcMetrics({tp,fp,fn,tn}) {
   return {acc,prec,rec,f1,tpr,fpr};
 }
 
-// ── ROC precompute — staircase from 20 patients ───────────
+// ── ROC precompute — staircase from 10 patients ───────────
 let rocPts = [];
 function buildROC() {
   // Step through each patient's score as threshold → true staircase curve
@@ -1073,10 +1197,11 @@ function update(t) {
   drawPatients(t);
 }
 
-// ── Slider ────────────────────────────────────────────────
+// ── Threshold control ─────────────────────────────────────
+// The top slider was removed; the threshold is set by dragging the blue bar on
+// the patient strip (below), by ▶ Animate, or by ↺ Reset.
 let threshold = 0.5;
-const slT = document.getElementById('sl-t');
-// Manual control (slider drag OR dragging the blue bar) always interrupts animation.
+// Manual control (dragging the blue bar) always interrupts animation.
 function stopAnimation() {
   if (animState === 'idle') return;
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
@@ -1084,14 +1209,6 @@ function stopAnimation() {
   btnAnim.textContent = '▶ Animate';
   animDrawnPts = []; animLastStep = 0; animElapsed = 0; animStartTime = null;
 }
-
-slT.addEventListener('input', e => {
-  stopAnimation();
-  threshold = parseFloat(e.target.value);
-  document.getElementById('lbl-t').textContent = threshold.toFixed(2);
-  slT.style.setProperty('--pct', (threshold*100).toFixed(1)+'%');
-  update(threshold);
-});
 
 // Drag (or click) the blue threshold bar directly on the patient strip.
 (function enablePatientStripDrag() {
@@ -1143,9 +1260,7 @@ const btnAnim = document.getElementById('btn-animate');
 
 function setSlider(t) {
   threshold = t;
-  slT.value = t;
   document.getElementById('lbl-t').textContent = t.toFixed(2);
-  slT.style.setProperty('--pct', (t*100).toFixed(1)+'%');
 }
 
 function animTick(timestamp) {
@@ -1240,14 +1355,9 @@ function resetAnim() {
 btnAnim.addEventListener('click', handleAnimBtn);
 document.getElementById('btn-reset').addEventListener('click', resetAnim);
 
-// ── Static model comparison ────────────────────────────────
-// Each model uses the same 12 non-cancer + 8 cancer scale as the main case study,
-// so clicking one loads a consistent 20-patient view above. AUCs ≈ 0.50 / 0.75 / 0.90 / 1.00.
+// ── Static model comparison (3 models: Good / Better / Perfect) ──
+// Each uses a 12 non-cancer + 8 cancer scale. AUCs ≈ 0.75 / 0.90 / 1.00.
 const staticModels = [
-  { id:'mc-random',  aucId:'mc-random-auc',  color:'#e74c3c',
-    // cancer/non-cancer scores evenly interleaved → ROC hugs the diagonal, AUC = 0.500
-    nc:     [{s:0.95},{s:0.84},{s:0.72},{s:0.66},{s:0.55},{s:0.45},{s:0.40},{s:0.30},{s:0.22},{s:0.18},{s:0.11},{s:0.05}],
-    cancer: [{s:0.90},{s:0.78},{s:0.60},{s:0.50},{s:0.35},{s:0.26},{s:0.15},{s:0.08}] },
   { id:'mc-good',    aucId:'mc-good-auc',    color:'#2e86c1',
     nc:     [{s:0.06},{s:0.13},{s:0.20},{s:0.27},{s:0.34},{s:0.41},{s:0.48},{s:0.55},{s:0.62},{s:0.69},{s:0.76},{s:0.83}],
     cancer: [{s:0.45},{s:0.52},{s:0.59},{s:0.66},{s:0.73},{s:0.80},{s:0.90},{s:0.65}] },
@@ -1431,7 +1541,7 @@ function setActiveDataset(data, title) {
   update(threshold);     // redraw ROC, confusion matrix, metrics, patient strip
 }
 (function wireModelClicks() {
-  const CASE_STUDY_TITLE = '20-Patient Case Study · AI Risk Scores';
+  const CASE_STUDY_TITLE = '10-Patient Case Study · AI Risk Scores';
   const resetBtn = document.getElementById('reset-dataset');
   const clearActive = () =>
     document.querySelectorAll('.model-grid .card').forEach(c => c.classList.remove('model-active'));
@@ -1457,7 +1567,7 @@ function setActiveDataset(data, title) {
     resetBtn.hidden = true;
   });
   // The top ↺ Reset is a full reset: besides the threshold (handled by resetAnim),
-  // reload the course's preset 20-patient case study if a model is currently loaded.
+  // reload the course's preset 10-patient case study if a model is currently loaded.
   const topReset = document.getElementById('btn-reset');
   if (topReset) topReset.addEventListener('click', () => {
     if (activeData !== gordPatients) {
@@ -1469,7 +1579,6 @@ function setActiveDataset(data, title) {
 })();
 
 // ── Init ──────────────────────────────────────────────────
-slT.style.setProperty('--pct','50%');
 function initDraw(attempts) {
   const el = document.getElementById('c-roc');
   const rect = el && el.getBoundingClientRect();
@@ -1521,8 +1630,15 @@ requestAnimationFrame(() => initDraw(0));
 
   function go(i) {
     if (i < 0) return;
+    // Slide 1 is gated: you must answer the hook quiz before moving forward.
+    if (currentIndex() === 0 && i > 0 && !window.__quizSolved) { pulseQuiz(); return; }
     if (i >= N) { location.hash = 'start'; return; }
     location.hash = 's' + (i + 1);
+  }
+  function pulseQuiz() {
+    var q = document.getElementById('quiz1'), f = document.getElementById('quiz1-fb');
+    if (q) { q.classList.remove('nudge'); void q.offsetWidth; q.classList.add('nudge'); }
+    if (f && !window.__quizSolved) { f.textContent = 'Choose an answer to continue.'; f.className = 'quiz-fb no'; void f.offsetWidth; f.classList.add('pop'); }
   }
 
   function render() {
@@ -1539,7 +1655,13 @@ requestAnimationFrame(() => initDraw(0));
     dots.forEach(function (d, i) { d.classList.toggle('on', i === idx); });
     label.textContent = (idx + 1) + ' / ' + N;
     back.disabled = idx === 0;
-    next.textContent = (idx === N - 1) ? 'Start the activity →' : 'Next ▸';
+    if (idx === 0 && !window.__quizSolved) {
+      next.disabled = true;
+      next.textContent = 'Answer to continue';
+    } else {
+      next.disabled = false;
+      next.textContent = (idx === N - 1) ? 'Start the activity →' : 'Next ▸';
+    }
     stage.scrollTop = 0;
   }
 
@@ -1555,7 +1677,63 @@ requestAnimationFrame(() => initDraw(0));
   });
 
   window.addEventListener('hashchange', render);
+  window.addEventListener('quizsolved', render);   // unlock Next when the hook quiz is answered
   render();
+})();
+
+// ── Slide 1 interactive hook: pick how many types of mistakes ──
+(function quizHook() {
+  var quiz = document.getElementById('quiz1');
+  if (!quiz) return;
+  var fb = document.getElementById('quiz1-fb');
+  var reveal = document.getElementById('quiz1-reveal');
+  var opts = Array.prototype.slice.call(quiz.querySelectorAll('.quiz-opt'));
+  opts.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (btn.getAttribute('data-correct')) {
+        opts.forEach(function (b) { b.disabled = true; b.classList.remove('wrong'); });
+        btn.classList.add('correct');
+        fb.textContent = 'Correct! Two types of mistakes.';
+        fb.className = 'quiz-fb ok';
+        if (reveal) reveal.hidden = false;
+        window.__quizSolved = true;
+        window.dispatchEvent(new Event('quizsolved'));   // unlock the Next button
+      } else {
+        btn.classList.remove('wrong'); void btn.offsetWidth;   // restart the shake even on repeat clicks
+        btn.classList.add('wrong');
+        fb.textContent = 'Not quite — take another guess.';
+        fb.className = 'quiz-fb no';
+        void fb.offsetWidth; fb.classList.add('pop');          // re-trigger the feedback pop/shake each time
+        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+      }
+    });
+  });
+})();
+
+// ── Slide 7 bridge: threshold sweeps 1→0, confusion-matrix counts update live ──
+(function rocAnim() {
+  var box = document.getElementById('roc-anim');
+  if (!box) return;
+  var non = [0.05,0.15,0.28,0.48,0.55,0.75];   // 6 non-cancer scores
+  var can = [0.37,0.68,0.86,0.95];             // 4 cancer scores
+  var thr = document.getElementById('ra-thr');
+  var elTn = document.getElementById('ra-tn'), elFp = document.getElementById('ra-fp');
+  var elFn = document.getElementById('ra-fn'), elTp = document.getElementById('ra-tp');
+  var DUR = 6000, start = null, lastTp = -1, lastFp = -1;
+  function countAtLeast(arr, t) { var n = 0; for (var i = 0; i < arr.length; i++) if (arr[i] >= t) n++; return n; }
+  function frame(ts) {
+    if (start === null) start = ts;
+    var t = 1 - (((ts - start) % DUR) / DUR);           // sweep 1 → 0
+    var tp = countAtLeast(can, t), fp = countAtLeast(non, t);
+    if (tp !== lastTp || fp !== lastFp) {                // only touch the DOM when a count changes
+      lastTp = tp; lastFp = fp;
+      elTp.textContent = tp; elFp.textContent = fp;
+      elFn.textContent = can.length - tp; elTn.textContent = non.length - fp;
+    }
+    if (thr) { var x = (20 + t * 220).toFixed(1); thr.setAttribute('x1', x); thr.setAttribute('x2', x); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 })();
 </script>
 </body>

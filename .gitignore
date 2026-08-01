@@ -2,3 +2,7 @@
 
 # Meeting recordings, transcripts, and internal notes (not for the public repo)
 Meeting_vedio/
+
+# Source slide deck (course material, not a web asset)
+Model evaluation-Part 1.pdf
+*.pptx
