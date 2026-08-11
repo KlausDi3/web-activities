@@ -325,7 +325,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .pipeline-fig figcaption { font-size: .78rem; color: var(--gray); margin-top: 6px; }
 
 /* Three model ROC mini-figures (slide 8) */
-.model-row { display: flex; gap: 14px; justify-content: center; align-items: flex-end; margin: 12px auto 4px; max-width: 560px; flex-wrap: wrap; }
+.model-row { display: flex; gap: 14px; justify-content: center; align-items: flex-end; margin: 12px auto 4px; max-width: 700px; flex-wrap: wrap; }
 .model-mini { flex: 1 1 130px; max-width: 170px; text-align: center; }
 .model-mini svg { width: 100%; height: auto; }
 
@@ -340,6 +340,11 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .ra-cell.fp { background: rgba(231,76,60,.10); }  .ra-cell.fp b { color: #e74c3c; }
 .ra-cell.fn { background: rgba(230,126,34,.10); } .ra-cell.fn b { color: #e67e22; }
 .ra-cell.tp { background: rgba(39,174,96,.12); }  .ra-cell.tp b { color: #27ae60; }
+.ra-toggle { display: block; margin: 10px auto 0; padding: 4px 16px; font-family: inherit; font-size: .78rem; font-weight: 700; color: var(--navy); background: #fff; border: 1px solid var(--mid); border-radius: 6px; cursor: pointer; }
+.ra-toggle:hover { background: rgba(46,134,193,.08); }
+.auc-status { font-size: .8rem; color: var(--gray); margin: 6px auto 0; text-align: center; min-height: 1.3em; font-variant-numeric: tabular-nums; }
+.auc-status b { color: var(--navy); }
+.auc-caption { font-size: .8rem; font-weight: 700; color: var(--navy); margin: 4px auto 0; text-align: center; }
 
 /* Controls legend (last slide) */
 .guide-controls { max-width: 640px; margin: 4px auto 0; background: #fff; border-radius: 12px; padding: 16px 24px; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
@@ -427,7 +432,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <p>
         Imagine your company runs <b>breast-cancer screening</b>, and you have built an AI that reads each
         mammogram and flags who might have cancer. It claims <b>92% accuracy</b>. Before you rely on it, you
-        have to judge it yourself — and to judge any AI, you first need to know how it can go wrong.
+        have to judge it yourself. And to judge any AI, you first need to know how it can go wrong.
       </p>
       <div class="quiz" id="quiz1">
         <div class="quiz-q">So, how many <b>types of mistakes</b> can this AI make?</div>
@@ -439,9 +444,10 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </div>
         <div class="quiz-fb" id="quiz1-fb" aria-live="polite"></div>
         <div class="quiz-reveal" id="quiz1-reveal" hidden>
-          <b>Exactly — two.</b> The AI can raise a <b>false alarm</b> (flag a healthy patient), or it can
-          <b>miss a real cancer</b>. The two are not equally costly — and telling them apart is what this
-          walkthrough is about. Next, we build the tools to see them: the confusion matrix, the ROC curve, and AUC.
+          <b>Exactly, two.</b> The AI can raise a <b>false alarm</b> and flag a healthy patient, or it can
+          <b>miss a real cancer</b>. The two mistakes are not equally costly. If you are not clear on the two
+          types of mistakes yet, hold on to that question; they will become clear soon. Along the way you will
+          meet the standard tools for weighing them: the confusion matrix, the ROC curve, and AUC.
         </div>
       </div>
     </section>
@@ -462,51 +468,59 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </svg>
       </div>
       <div class="slide-eyebrow">Step 1 of 7</div>
-      <h2>The setup: 10 patients, one score each</h2>
+      <h2>From each image to a risk score</h2>
       <p>
-        Suppose 10 patients come in for screening. In truth <b>4 have cancer and 6 do not</b>, but you don't
-        know which. The AI reads each mammogram and returns one <b>risk score</b> from 0 to 1 — not a yes or
-        no, just the score.
-      </p>
-      <p>
-        Ideally the cancer patients would score <b>high</b> and the healthy ones <b>low</b>. In practice the
-        two groups overlap, as the dots above show.
+        To understand the mistakes AI models make, we first need to understand how AI works. The nature of
+        AI is to predict a <b>risk score</b> based on the raw input data. Using forward propagation, as we
+        learned previously, the model reads each mammogram and returns one number between 0 and 1. The
+        higher the score, the more the image looks like cancer.
       </p>
       <figure class="pipeline-fig">
         <img src="pipeline.png" alt="The evaluation pipeline: a mammogram goes into the AI model, which outputs a prediction score between 0 and 1; a threshold turns it into cancer or no cancer, then comparison with the ground truth gives True Positive, False Negative, False Positive, or True Negative">
-        <figcaption>The whole pipeline you'll walk through.</figcaption>
+        <figcaption>The AI's screening pipeline, from image to result.</figcaption>
       </figure>
+      <p>
+        Now we have 10 images: <b>6 are from patients without cancer, and 4 are from patients with
+        cancer</b>. The AI processes all 10, and each image gets a score, as shown above. Ideally, the
+        cancer patients would score <b>high</b> and the healthy ones <b>low</b>.
+      </p>
       <div class="guide-legend">
-        <span class="dot" style="background:#5a6a7e"></span><b>gray</b> = healthy patient
-        <span class="dot" style="background:#d94040"></span><b>red</b> = cancer patient
-        <br>the model sees only the score, never the truth.
+        <span class="dot" style="background:#5a6a7e"></span><b>Gray</b> indicates no cancer.
+        <span class="dot" style="background:#d94040"></span><b>Red</b> indicates cancer.
+        <br>The colors show the truth for teaching; in real screening you see only the scores.
       </div>
     </section>
 
     <!-- Slide 3 · Step 2 — the threshold -->
     <section class="slide" data-i="3">
       <div class="slide-fig">
-        <svg viewBox="0 0 240 104" role="img" aria-label="A threshold line splits patients into predicted negative and positive">
-          <rect x="18" y="8" width="112" height="66" fill="rgba(142,68,173,.06)"/>
-          <rect x="130" y="8" width="94" height="66" fill="rgba(39,174,96,.09)"/>
-          <text x="72" y="20" font-size="8.5" fill="#8e44ad" text-anchor="middle">predict −</text>
-          <text x="178" y="20" font-size="8.5" fill="#27ae60" text-anchor="middle">predict +</text>
-          <circle cx="40" cy="34" r="8" fill="#5a6a7e"/><circle cx="66" cy="34" r="8" fill="#5a6a7e"/>
-          <circle cx="96" cy="34" r="8" fill="#5a6a7e"/><circle cx="150" cy="34" r="8" fill="#5a6a7e"/>
-          <circle cx="112" cy="56" r="8" fill="#d94040"/><circle cx="165" cy="56" r="8" fill="#d94040"/>
-          <circle cx="192" cy="56" r="8" fill="#d94040"/><circle cx="212" cy="56" r="8" fill="#d94040"/>
+        <svg viewBox="0 0 240 104" role="img" aria-label="A threshold line splits the ten patients into predicted negative and positive">
+          <rect x="18" y="8" width="128" height="66" fill="rgba(142,68,173,.06)"/>
+          <rect x="146" y="8" width="78" height="66" fill="rgba(39,174,96,.09)"/>
+          <text x="82" y="20" font-size="8.5" fill="#8e44ad" text-anchor="middle">predict −</text>
+          <text x="185" y="20" font-size="8.5" fill="#27ae60" text-anchor="middle">predict +</text>
+          <circle cx="28.3" cy="34" r="8" fill="#5a6a7e"/><circle cx="48.9" cy="34" r="8" fill="#5a6a7e"/>
+          <circle cx="75.7" cy="34" r="8" fill="#5a6a7e"/><circle cx="116.9" cy="34" r="8" fill="#5a6a7e"/>
+          <circle cx="131.3" cy="34" r="8" fill="#5a6a7e"/><circle cx="172.5" cy="34" r="8" fill="#5a6a7e"/>
+          <circle cx="94.2" cy="56" r="8" fill="#d94040"/><circle cx="158.1" cy="56" r="8" fill="#d94040"/>
+          <circle cx="195.2" cy="56" r="8" fill="#d94040"/><circle cx="213.7" cy="56" r="8" fill="#d94040"/>
           <line x1="18" y1="74" x2="224" y2="74" stroke="#1b2a4a" stroke-width="1.5"/>
-          <line x1="130" y1="6" x2="130" y2="80" stroke="#2e86c1" stroke-width="4" stroke-linecap="round"/>
-          <text x="130" y="101" font-size="8.5" fill="#2e86c1" text-anchor="middle">threshold</text>
+          <line x1="146" y1="6" x2="146" y2="80" stroke="#2e86c1" stroke-width="4" stroke-linecap="round"/>
+          <text x="146" y="101" font-size="8.5" fill="#2e86c1" text-anchor="middle">threshold</text>
         </svg>
       </div>
       <div class="slide-eyebrow">Step 2 of 7</div>
       <h2>Draw a line: set the threshold</h2>
       <p>
-        You now have a score for every patient, but a score by itself does not tell you who has cancer. To
-        decide, you <b>draw a line</b>, called the <b>threshold</b>. Patients at or above the line are called
-        cancer; those below it are called clear. There is no single right place for the line, and moving it
-        changes who gets called back.
+        Look at the two groups above. Generally, patients with no cancer receive <b>lower</b> risk scores
+        and patients with cancer receive <b>higher</b> ones. But not always: one patient without cancer
+        scored high, and one cancer patient scored low. The two groups <b>overlap</b>, and that overlap is
+        what makes things tricky.
+      </p>
+      <p>
+        So we now draw a line called the <b>threshold</b>. Patients with risk <b>above</b> the threshold are
+        classified as <b>cancer</b>; patients <b>below</b> it are classified as <b>clear</b>. There is no
+        single right place for the line, and moving it changes which patients are flagged as cancer.
       </p>
     </section>
 
@@ -534,18 +548,69 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <div class="slide-eyebrow">Step 3 of 7</div>
       <h2>The two types of mistakes</h2>
       <p>
-        <b>Remember the question we opened with</b> — how many types of mistakes can the AI make? Now that a
-        threshold is set, here they are, and there are two. A patient who has <b>no cancer</b> but scores
-        above the threshold is flagged as high risk, a <b>False Positive</b> or false alarm. A patient who
-        <b>has cancer</b> but scores below the threshold is called clear, a <b>False Negative</b> or missed
-        cancer. The missed cancer is the more serious mistake; a false alarm leads to an unnecessary biopsy and anxiety.
+        <b>Remember the question we opened with:</b> how many types of mistakes can the AI make? You
+        answered two. Back then it was just a number; now that you have drawn a threshold, the two mistakes
+        finally show up, right there in the picture above.
       </p>
+      <p>
+        <b>False Positive</b>, the false alarm: a patient has <b>no cancer</b>, but the score lands above
+        the threshold, so the AI wrongly calls this patient cancer.<br>
+        <b>False Negative</b>, the missed cancer: a patient <b>has cancer</b>, but the score lands below
+        the threshold, so the AI wrongly calls this patient clear.
+      </p>
+      <p><b>Now do you see the two types of mistakes?</b></p>
     </section>
 
     <!-- Slide 5 · Step 4 — the confusion matrix -->
     <section class="slide" data-i="5">
       <div class="slide-fig">
-        <svg viewBox="0 0 250 130" role="img" aria-label="Two by two confusion matrix">
+        <svg viewBox="0 0 470 140" style="max-width:640px" role="img" aria-label="The ten scored patients with a threshold at 0.5 convert into a confusion matrix: 4 true negatives, 2 false positives, 1 false negative, 3 true positives">
+          <!-- left: the 10 patients at threshold 0.5 -->
+          <line x1="14" y1="80" x2="186" y2="80" stroke="#1b2a4a" stroke-width="1.2"/>
+          <circle cx="22.6" cy="66" r="5" fill="#5a6a7e"/><circle cx="39.8" cy="66" r="5" fill="#5a6a7e"/>
+          <circle cx="62.2" cy="66" r="5" fill="#5a6a7e"/><circle cx="96.6" cy="66" r="5" fill="#5a6a7e"/>
+          <circle cx="108.6" cy="66" r="5" fill="#5a6a7e"/><circle cx="143" cy="66" r="5" fill="#5a6a7e"/>
+          <circle cx="77.6" cy="94" r="5" fill="#d94040"/><circle cx="131" cy="94" r="5" fill="#d94040"/>
+          <circle cx="161.9" cy="94" r="5" fill="#d94040"/><circle cx="177.4" cy="94" r="5" fill="#d94040"/>
+          <line x1="100" y1="52" x2="100" y2="108" stroke="#2e86c1" stroke-width="3" stroke-linecap="round"/>
+          <text x="100" y="122" font-size="7.5" fill="#2e86c1" text-anchor="middle">threshold 0.5</text>
+          <!-- middle: the conversion arrow -->
+          <text x="222" y="66" font-size="8" fill="#4a4a5a" text-anchor="middle">becomes</text>
+          <line x1="196" y1="80" x2="242" y2="80" stroke="#8899aa" stroke-width="2.5"/>
+          <polygon points="242,74 254,80 242,86" fill="#8899aa"/>
+          <!-- right: the confusion matrix -->
+          <text x="334" y="20" font-size="7.5" fill="#4a4a5a" text-anchor="middle">Predicted Negative</text>
+          <text x="416" y="20" font-size="7.5" fill="#4a4a5a" text-anchor="middle">Predicted Positive</text>
+          <text x="292" y="52"  font-size="7.5" fill="#4a4a5a" text-anchor="end">Actual −</text>
+          <text x="292" y="102" font-size="7.5" fill="#4a4a5a" text-anchor="end">Actual +</text>
+          <rect x="296" y="28" width="76" height="44" rx="6" fill="rgba(142,68,173,.10)"/>
+          <text x="334" y="47" font-size="11" font-weight="700" fill="#8e44ad" text-anchor="middle">TN · 4</text>
+          <text x="334" y="61" font-size="7" fill="#8e44ad" text-anchor="middle">correct clear</text>
+          <rect x="378" y="28" width="76" height="44" rx="6" fill="rgba(231,76,60,.10)"/>
+          <text x="416" y="47" font-size="11" font-weight="700" fill="#e74c3c" text-anchor="middle">FP · 2</text>
+          <text x="416" y="61" font-size="7" fill="#e74c3c" text-anchor="middle">false alarm</text>
+          <rect x="296" y="78" width="76" height="44" rx="6" fill="rgba(230,126,34,.10)"/>
+          <text x="334" y="97" font-size="11" font-weight="700" fill="#e67e22" text-anchor="middle">FN · 1</text>
+          <text x="334" y="111" font-size="7" fill="#e67e22" text-anchor="middle">cancer missed</text>
+          <rect x="378" y="78" width="76" height="44" rx="6" fill="rgba(39,174,96,.12)"/>
+          <text x="416" y="97" font-size="11" font-weight="700" fill="#27ae60" text-anchor="middle">TP · 3</text>
+          <text x="416" y="111" font-size="7" fill="#27ae60" text-anchor="middle">correct catch</text>
+        </svg>
+      </div>
+      <div class="slide-eyebrow">Step 4 of 7</div>
+      <h2>The confusion matrix</h2>
+      <p style="max-width:780px">
+        Now count what the threshold did. At a threshold of 0.5, 4 patients without cancer are correctly
+        called clear, 2 are false alarms, 3 cancers are caught, and 1 is missed. Arrange those four counts in
+        a two-by-two table and you have the <b>confusion matrix</b>: the figure on the left converts to the
+        matrix on the right. One threshold, four numbers that account for every patient.
+      </p>
+    </section>
+
+    <!-- Slide 6 · Step 5 — the threshold trade-off (NEW) -->
+    <section class="slide" data-i="6">
+      <div class="slide-fig">
+        <svg viewBox="0 0 250 130" style="max-width:360px" role="img" aria-label="The confusion matrix again, with the False Positive labeled Type 1 error and the False Negative labeled Type 2 error">
           <text x="98"  y="8"  font-size="8" fill="#4a4a5a" text-anchor="middle">Predicted</text>
           <text x="98"  y="16" font-size="8" fill="#4a4a5a" text-anchor="middle">Negative</text>
           <text x="188" y="8"  font-size="8" fill="#4a4a5a" text-anchor="middle">Predicted</text>
@@ -558,29 +623,33 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
           <text x="98" y="42" font-size="12" font-weight="700" fill="#8e44ad" text-anchor="middle">TN</text>
           <text x="98" y="57" font-size="8" fill="#8e44ad" text-anchor="middle">correct clear</text>
           <rect x="146" y="20" width="80" height="48" rx="6" fill="rgba(231,76,60,.10)"/>
-          <text x="186" y="42" font-size="12" font-weight="700" fill="#e74c3c" text-anchor="middle">FP</text>
-          <text x="186" y="57" font-size="8" fill="#e74c3c" text-anchor="middle">false alarm</text>
+          <text x="186" y="40" font-size="12" font-weight="700" fill="#e74c3c" text-anchor="middle">FP</text>
+          <text x="186" y="53" font-size="8" font-weight="700" fill="#e74c3c" text-anchor="middle">Type 1 error</text>
+          <text x="186" y="63" font-size="7" fill="#e74c3c" text-anchor="middle">false alarm</text>
           <rect x="58"  y="74" width="80" height="48" rx="6" fill="rgba(230,126,34,.10)"/>
-          <text x="98" y="96" font-size="12" font-weight="700" fill="#e67e22" text-anchor="middle">FN</text>
-          <text x="98" y="111" font-size="8" fill="#e67e22" text-anchor="middle">cancer missed</text>
+          <text x="98" y="94" font-size="12" font-weight="700" fill="#e67e22" text-anchor="middle">FN</text>
+          <text x="98" y="107" font-size="8" font-weight="700" fill="#e67e22" text-anchor="middle">Type 2 error</text>
+          <text x="98" y="117" font-size="7" fill="#e67e22" text-anchor="middle">missed cancer</text>
           <rect x="146" y="74" width="80" height="48" rx="6" fill="rgba(39,174,96,.12)"/>
           <text x="186" y="96" font-size="12" font-weight="700" fill="#27ae60" text-anchor="middle">TP</text>
           <text x="186" y="111" font-size="8" fill="#27ae60" text-anchor="middle">correct catch</text>
         </svg>
       </div>
-      <div class="slide-eyebrow">Step 4 of 7</div>
-      <h2>The confusion matrix</h2>
+      <div class="slide-eyebrow">Step 5 of 7</div>
+      <h2>The two errors have names: Type 1 and Type 2</h2>
       <p>
-        Put the two mistakes together with the two correct outcomes, <b>True Negative</b> and
-        <b>True Positive</b>, and you have the <b>confusion matrix</b>. This confusion matrix clearly depends
-        on the threshold: move the threshold and all four counts change.
+        This is the same matrix you just built, and the two mistakes in it have formal names. A
+        <b>False Positive</b> is a <b>Type 1 error</b>: the false alarm. A <b>False Negative</b> is a
+        <b>Type 2 error</b>: the missed cancer.
       </p>
-    </section>
-
-    <!-- Slide 6 · Step 5 — the threshold trade-off (NEW) -->
-    <section class="slide" data-i="6">
-      <div class="slide-fig">
-        <svg viewBox="0 0 240 160" role="img" aria-label="A high threshold gives fewer false alarms but more missed cancers; a low threshold does the reverse">
+      <p>
+        A change in the threshold affects both Type 1 and Type 2 errors. Set it <b>high</b> and the AI flags
+        fewer patients, so Type 1 errors fall, but more cancers slip through and Type 2 errors rise. Set it
+        <b>low</b> and the reverse happens. You cannot push both to zero at once, and in screening the Type 2
+        miss is the mistake that can cost a life.
+      </p>
+      <div class="slide-fig" style="margin:6px 0 0">
+        <svg viewBox="0 0 240 160" style="max-width:280px" role="img" aria-label="A high threshold gives fewer false alarms but more missed cancers; a low threshold does the reverse">
           <!-- High threshold row -->
           <text x="6" y="20" font-size="8" font-weight="700" fill="#1b2a4a">High threshold</text>
           <line x1="24" y1="50" x2="226" y2="50" stroke="#1b2a4a" stroke-width="1.2"/>
@@ -589,7 +658,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
           <circle cx="122" cy="58" r="6" fill="#d94040"/><circle cx="150" cy="58" r="6" fill="#d94040"/>
           <circle cx="176" cy="58" r="6" fill="#d94040"/><circle cx="202" cy="58" r="6" fill="#d94040"/>
           <line x1="188" y1="34" x2="188" y2="66" stroke="#2e86c1" stroke-width="3" stroke-linecap="round"/>
-          <text x="118" y="78" font-size="7" fill="#4a4a5a" text-anchor="middle">fewer false alarms, more missed cancers</text>
+          <text x="118" y="78" font-size="7" fill="#4a4a5a" text-anchor="middle">fewer Type 1, more Type 2</text>
           <!-- Low threshold row -->
           <text x="6" y="104" font-size="8" font-weight="700" fill="#1b2a4a">Low threshold</text>
           <line x1="24" y1="126" x2="226" y2="126" stroke="#1b2a4a" stroke-width="1.2"/>
@@ -598,23 +667,8 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
           <circle cx="122" cy="134" r="6" fill="#d94040"/><circle cx="150" cy="134" r="6" fill="#d94040"/>
           <circle cx="176" cy="134" r="6" fill="#d94040"/><circle cx="202" cy="134" r="6" fill="#d94040"/>
           <line x1="72" y1="110" x2="72" y2="142" stroke="#2e86c1" stroke-width="3" stroke-linecap="round"/>
-          <text x="130" y="154" font-size="7" fill="#4a4a5a" text-anchor="middle">catches every cancer, many false alarms</text>
+          <text x="130" y="154" font-size="7" fill="#4a4a5a" text-anchor="middle">more Type 1, fewer Type 2</text>
         </svg>
-      </div>
-      <div class="slide-eyebrow">Step 5 of 7</div>
-      <h2>The two errors have names: Type 1 and Type 2</h2>
-      <p>
-        <b>Type 1 error</b> = a <b>False Positive</b>: a false alarm, a healthy patient flagged as cancer.<br>
-        <b>Type 2 error</b> = a <b>False Negative</b>: a miss, a real cancer called clear.
-      </p>
-      <p>
-        Now the trade-off. Set the threshold <b>very high</b> and you reduce Type 1 errors, the false alarms,
-        but increase Type 2 errors, the missed cancers. Set it <b>low</b> and the reverse happens. Lowering
-        one raises the other — and in screening, the Type 2 miss is the one that can cost a life.
-      </p>
-      <div class="guide-callout">
-        On the confusion matrix, the <b>False Positive</b> sits top-right (Type 1) and the <b>False
-        Negative</b> bottom-left (Type 2) — a handy way to keep the two straight.
       </div>
     </section>
 
@@ -624,8 +678,9 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       <h2>Every threshold gives a different confusion matrix</h2>
       <p>
         The confusion matrix depends on the threshold. Watch below: as the threshold <b>slides from 1 down to
-        0</b>, the four counts keep changing. Every setting gives a different matrix — so no single threshold
-        is "the model." To judge the whole model, we need to look across <b>all</b> thresholds at once.
+        0</b>, the four counts keep changing. No single threshold tells the whole story, so to judge the model
+        itself we need to look across <b>all</b> thresholds at once. Press <b>Pause</b> anytime to freeze the
+        sweep and study a moment.
       </p>
       <div class="roc-anim" id="roc-anim">
         <svg viewBox="0 0 260 78" class="ra-line" role="img" aria-label="Ten patients on a score line with a threshold sweeping across them">
@@ -645,43 +700,103 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
           <div class="ra-cell fn"><span>False Neg</span><b id="ra-fn">1</b></div>
           <div class="ra-cell tp"><span>True Pos</span><b id="ra-tp">3</b></div>
         </div>
+        <button class="ra-toggle" id="ra-toggle" type="button" aria-pressed="false">⏸ Pause</button>
       </div>
     </section>
 
     <!-- Slide 8 · Step 7 — AUC -->
     <section class="slide" data-i="8">
-      <div class="slide-fig">
-        <svg viewBox="0 0 200 150" role="img" aria-label="AUC is the area under the ROC curve — computed from this activity's 10 patients">
-          <line x1="34" y1="14" x2="34" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
-          <line x1="34" y1="120" x2="182" y2="120" stroke="#1b2a4a" stroke-width="1.2"/>
-          <line x1="34" y1="120" x2="182" y2="14" stroke="#4a4a5a" stroke-width="1" stroke-dasharray="4 4"/>
-          <!-- Area under the real ROC staircase (AUC = 0.833, matches the live #c-roc chart) -->
-          <path d="M34,120 L34,67 L58.7,67 L58.7,40.5 L108,40.5 L108,14 L182,14 L182,120 Z" fill="rgba(46,134,193,.14)"/>
-          <polyline points="34,120 34,67 58.7,67 58.7,40.5 108,40.5 108,14 182,14" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
-          <text x="118" y="86" font-size="13" font-weight="700" fill="#2e86c1" text-anchor="middle">AUC</text>
-          <text x="118" y="99" font-size="8" font-weight="700" fill="#2e86c1" text-anchor="middle">0.833</text>
-          <text x="108" y="63" font-size="7" fill="#4a4a5a" text-anchor="middle" transform="rotate(-36 108 63)">random model</text>
-          <text x="14" y="72" font-size="8" fill="#4a4a5a" transform="rotate(-90 14 72)">TPR</text>
-          <text x="108" y="140" font-size="8" fill="#4a4a5a" text-anchor="middle">FPR</text>
+      <div class="slide-fig" style="flex-direction:column;align-items:center">
+        <svg viewBox="0 0 200 192" style="max-width:420px" role="img" aria-label="As the threshold sweeps from 1 to 0 across the ten patient scores, the ROC curve traces itself point by point; the area under it is the AUC, 0.833">
+          <!-- score strip: the threshold sweeps 1 → 0 -->
+          <text x="108" y="7" font-size="6.5" fill="#8899aa" text-anchor="middle">the threshold sweeps from 1 to 0</text>
+          <line x1="34" y1="16" x2="182" y2="16" stroke="#1b2a4a" stroke-width="1"/>
+          <circle cx="41.4" cy="11" r="3.5" fill="#5a6a7e"/><circle cx="56.2" cy="11" r="3.5" fill="#5a6a7e"/>
+          <circle cx="75.4" cy="11" r="3.5" fill="#5a6a7e"/><circle cx="105" cy="11" r="3.5" fill="#5a6a7e"/>
+          <circle cx="115.4" cy="11" r="3.5" fill="#5a6a7e"/><circle cx="145" cy="11" r="3.5" fill="#5a6a7e"/>
+          <circle cx="88.8" cy="21" r="3.5" fill="#d94040"/><circle cx="134.6" cy="21" r="3.5" fill="#d94040"/>
+          <circle cx="161.3" cy="21" r="3.5" fill="#d94040"/><circle cx="174.6" cy="21" r="3.5" fill="#d94040"/>
+          <line id="auc-thr" x1="182" y1="4" x2="182" y2="28" stroke="#2e86c1" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- ROC chart: the curve traces itself as the threshold moves -->
+          <line x1="34" y1="52" x2="34" y2="158" stroke="#1b2a4a" stroke-width="1.2"/>
+          <line x1="34" y1="158" x2="182" y2="158" stroke="#1b2a4a" stroke-width="1.2"/>
+          <line x1="34" y1="158" x2="182" y2="52" stroke="#4a4a5a" stroke-width="1" stroke-dasharray="4 4"/>
+          <text x="108" y="101" font-size="7" fill="#4a4a5a" text-anchor="middle" transform="rotate(-36 108 101)">random model</text>
+          <polygon id="auc-fill" points="34,158" fill="rgba(46,134,193,.14)"/>
+          <polyline id="auc-path" points="34,158" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
+          <circle id="auc-dot" cx="34" cy="158" r="3.2" fill="#e67e22" stroke="#fff" stroke-width="1.2"/>
+          <g id="auc-final" opacity="0" style="transition:opacity .6s">
+            <text x="108" y="44" font-size="7" font-weight="700" fill="#16a085" text-anchor="middle">closer to the top left = better model</text>
+            <line x1="104" y1="76" x2="49" y2="59" stroke="#16a085" stroke-width="1.6"/>
+            <polygon points="46,58 53.6,57.2 51.8,63" fill="#16a085"/>
+            <text x="118" y="124" font-size="13" font-weight="700" fill="#2e86c1" text-anchor="middle">AUC</text>
+            <text x="118" y="137" font-size="8" font-weight="700" fill="#2e86c1" text-anchor="middle">0.833</text>
+          </g>
+          <text x="14" y="110" font-size="8" fill="#4a4a5a" transform="rotate(-90 14 110)">TPR</text>
+          <text x="108" y="178" font-size="8" fill="#4a4a5a" text-anchor="middle">FPR</text>
         </svg>
+        <div class="auc-status" id="auc-status" aria-live="off"></div>
+        <div class="auc-caption">This is how the ROC curve is produced: each threshold adds one point to the chart.</div>
+        <button class="ra-toggle" id="auc-anim-toggle" type="button" aria-pressed="false">⏸ Pause</button>
       </div>
       <div class="slide-eyebrow">Step 7 of 7</div>
-      <h2>The ROC curve, and its area (AUC)</h2>
+      <h2>The ROC curve and the area under it (AUC)</h2>
       <p>
-        Turn each threshold into a point: the <b>True Positive Rate</b> (cancers caught) up the side, the
-        <b>False Positive Rate</b> (healthy patients flagged) across the bottom. Sweep every threshold and the
-        points trace the <b>ROC curve</b> above. The <b>area under it</b>, the <b>AUC</b>, is one number for
-        the whole curve: <b>0.5</b> is a coin flip (the diagonal), <b>1.0</b> is perfect (hugs the top-left).
-        Because AUC does not depend on any single threshold, it judges the <b>model itself</b> — mammography
-        AI models score roughly <b>0.61 to 0.70</b>.
+        Here is where the ROC curve comes from. The confusion matrix depends on the threshold, so to capture
+        the model's <b>full performance across different thresholds</b>, we take the sweep you just watched
+        and, at every threshold, record two rates: the <b>True Positive Rate</b>, the share of cancers
+        caught, and the <b>False Positive Rate</b>, the share of healthy patients wrongly flagged. Each
+        threshold becomes one point, and together the points trace the <b>ROC curve</b>. Watch it happen
+        above: as the threshold sweeps across the scores, the curve draws itself.
+      </p>
+      <p>
+        That was one model. Now suppose a second model comes along, as below. <b>Model B</b> is better: it
+        gives the cancer cases <b>high</b> scores and the non-cancer cases <b>low</b> scores, which reduces
+        both Type 1 and Type 2 errors. But every threshold gives different numbers, so how do we compare two
+        models fairly? We compare their <b>whole curves</b>.
+      </p>
+      <div class="slide-fig" style="margin:2px 0 10px">
+        <svg viewBox="0 0 260 100" style="max-width:400px" role="img" aria-label="Model A mixes the two groups along the score line; Model B separates them cleanly">
+          <text x="130" y="10" font-size="8" font-weight="700" fill="#1b2a4a" text-anchor="middle">Model A · the two groups mix</text>
+          <line x1="20" y1="28" x2="240" y2="28" stroke="#1b2a4a" stroke-width="1.2"/>
+          <circle cx="31" cy="23" r="5" fill="#5a6a7e"/><circle cx="53" cy="23" r="5" fill="#5a6a7e"/>
+          <circle cx="81.6" cy="23" r="5" fill="#5a6a7e"/><circle cx="125.6" cy="23" r="5" fill="#5a6a7e"/>
+          <circle cx="141" cy="23" r="5" fill="#5a6a7e"/><circle cx="185" cy="23" r="5" fill="#5a6a7e"/>
+          <circle cx="101.4" cy="33" r="5" fill="#d94040"/><circle cx="169.6" cy="33" r="5" fill="#d94040"/>
+          <circle cx="209.2" cy="33" r="5" fill="#d94040"/><circle cx="229" cy="33" r="5" fill="#d94040"/>
+          <text x="130" y="60" font-size="8" font-weight="700" fill="#1b2a4a" text-anchor="middle">Model B · separates them cleanly</text>
+          <line x1="20" y1="78" x2="240" y2="78" stroke="#1b2a4a" stroke-width="1.2"/>
+          <circle cx="31" cy="73" r="5" fill="#5a6a7e"/><circle cx="46.4" cy="73" r="5" fill="#5a6a7e"/>
+          <circle cx="64" cy="73" r="5" fill="#5a6a7e"/><circle cx="81.6" cy="73" r="5" fill="#5a6a7e"/>
+          <circle cx="97" cy="73" r="5" fill="#5a6a7e"/><circle cx="112.4" cy="73" r="5" fill="#5a6a7e"/>
+          <circle cx="156.4" cy="83" r="5" fill="#d94040"/><circle cx="185" cy="83" r="5" fill="#d94040"/>
+          <circle cx="207" cy="83" r="5" fill="#d94040"/><circle cx="229" cy="83" r="5" fill="#d94040"/>
+        </svg>
+      </div>
+      <p>
+        Draw the ROC curve for each model and lay them on the same axes: the curve that pushes toward the
+        <b>top left corner</b> belongs to the better model. A strong model catches the cancers first, so its
+        curve climbs straight up before turning right; a random model mixes the two groups, so its curve just
+        follows the diagonal. The <b>area under the curve</b>, the <b>AUC</b>, turns each curve into one
+        number: <b>0.5</b> is a coin flip and <b>1.0</b> is perfect. Real mammography AI models score roughly
+        <b>0.61 to 0.70</b>.
       </p>
       <div class="model-row">
+        <div class="model-mini">
+          <svg viewBox="0 0 100 100" role="img" aria-label="Random model ROC curve, AUC 0.50">
+            <line x1="22" y1="12" x2="22" y2="78" stroke="#1b2a4a" stroke-width="1"/>
+            <line x1="22" y1="78" x2="92" y2="78" stroke="#1b2a4a" stroke-width="1"/>
+            <line x1="22" y1="78" x2="92" y2="12" stroke="#4a4a5a" stroke-width=".8" stroke-dasharray="3 3"/>
+            <polyline points="22,78 22,69.75 39.5,69.75 39.5,53.25 57,53.25 57,36.75 74.5,36.75 74.5,20.25 92,20.25 92,12" fill="none" stroke="#8899aa" stroke-width="2" stroke-linejoin="round"/>
+            <text x="57" y="94" font-size="8" font-weight="700" fill="#4a4a5a" text-anchor="middle">Random · AUC 0.50</text>
+          </svg>
+        </div>
         <div class="model-mini">
           <svg viewBox="0 0 100 100" role="img" aria-label="Good model ROC curve, AUC 0.75">
             <line x1="22" y1="12" x2="22" y2="78" stroke="#1b2a4a" stroke-width="1"/>
             <line x1="22" y1="78" x2="92" y2="78" stroke="#1b2a4a" stroke-width="1"/>
             <line x1="22" y1="78" x2="92" y2="12" stroke="#4a4a5a" stroke-width=".8" stroke-dasharray="3 3"/>
-            <polyline points="22,78 22,69.8 27.8,69.8 27.8,61.5 33.7,61.5 33.7,53.2 39.5,53.2 39.5,36.8 45.3,36.8 45.3,28.5 51.2,28.5 51.2,20.2 57,20.2 57,12 92,12" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
+            <polyline points="22,78 22,50 38,50 38,32 56,32 56,20 74,20 74,12 92,12" fill="none" stroke="#2e86c1" stroke-width="2" stroke-linejoin="round"/>
             <text x="57" y="94" font-size="8" font-weight="700" fill="#4a4a5a" text-anchor="middle">Good · AUC 0.75</text>
           </svg>
         </div>
@@ -704,14 +819,14 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
           </svg>
         </div>
       </div>
-      <p style="font-size:.85rem;text-align:center;margin-top:2px;">A stronger model bows further toward the top-left, and its AUC is higher.</p>
+      <p style="font-size:.85rem;text-align:center;margin-top:2px;">A stronger model bows further toward the top left, and its AUC is higher.</p>
       <p>
         So the order is: <b>first pick the model</b> by comparing ROC curves and AUC, <b>then</b> set that
         model's threshold based on which mistake is costlier. Choosing the model and choosing the threshold
         are two separate decisions.
       </p>
       <div class="guide-callout">
-        <b>Why this matters to a leader:</b> the two errors are not equal, so put a real cost on each — the
+        <b>Why this matters to a leader:</b> the two errors are not equal, so put a real cost on each: the
         dollars and the human cost of a <b>missed cancer</b> versus a <b>false alarm</b>. That cost is what
         tells you where to set the threshold. The same curve can also reveal fairness gaps, where a model that
         looks strong overall performs near-randomly for a particular subgroup.
@@ -1701,7 +1816,7 @@ requestAnimationFrame(() => initDraw(0));
       } else {
         btn.classList.remove('wrong'); void btn.offsetWidth;   // restart the shake even on repeat clicks
         btn.classList.add('wrong');
-        fb.textContent = 'Not quite — take another guess.';
+        fb.textContent = 'Not quite. Take another guess.';
         fb.className = 'quiz-fb no';
         void fb.offsetWidth; fb.classList.add('pop');          // re-trigger the feedback pop/shake each time
         setTimeout(function () { btn.classList.remove('wrong'); }, 600);
@@ -1719,11 +1834,14 @@ requestAnimationFrame(() => initDraw(0));
   var thr = document.getElementById('ra-thr');
   var elTn = document.getElementById('ra-tn'), elFp = document.getElementById('ra-fp');
   var elFn = document.getElementById('ra-fn'), elTp = document.getElementById('ra-tp');
-  var DUR = 6000, start = null, lastTp = -1, lastFp = -1;
+  var toggle = document.getElementById('ra-toggle');
+  var DUR = 6000, elapsed = 0, prev = null, playing = true, lastTp = -1, lastFp = -1;
   function countAtLeast(arr, t) { var n = 0; for (var i = 0; i < arr.length; i++) if (arr[i] >= t) n++; return n; }
   function frame(ts) {
-    if (start === null) start = ts;
-    var t = 1 - (((ts - start) % DUR) / DUR);           // sweep 1 → 0
+    if (prev === null) prev = ts;
+    if (playing) elapsed += ts - prev;                   // pause freezes the sweep in place
+    prev = ts;
+    var t = 1 - ((elapsed % DUR) / DUR);                 // sweep 1 → 0
     var tp = countAtLeast(can, t), fp = countAtLeast(non, t);
     if (tp !== lastTp || fp !== lastFp) {                // only touch the DOM when a count changes
       lastTp = tp; lastFp = fp;
@@ -1733,6 +1851,69 @@ requestAnimationFrame(() => initDraw(0));
     if (thr) { var x = (20 + t * 220).toFixed(1); thr.setAttribute('x1', x); thr.setAttribute('x2', x); }
     requestAnimationFrame(frame);
   }
+  if (toggle) toggle.addEventListener('click', function () {
+    playing = !playing;
+    toggle.textContent = playing ? '⏸ Pause' : '▶ Play';
+    toggle.setAttribute('aria-pressed', String(!playing));
+  });
+  requestAnimationFrame(frame);
+})();
+
+// ── Slide 8: the ROC curve traces itself as the threshold sweeps 1→0 ──
+(function aucAnim() {
+  var path = document.getElementById('auc-path');
+  var fill = document.getElementById('auc-fill');
+  var dot = document.getElementById('auc-dot');
+  if (!path || !fill || !dot) return;
+  var thr = document.getElementById('auc-thr');
+  var toggle = document.getElementById('auc-anim-toggle');
+  var non = [0.05,0.15,0.28,0.48,0.55,0.75], can = [0.37,0.68,0.86,0.95];
+  var all = non.map(function (s) { return { s: s, cancer: 0 }; })
+    .concat(can.map(function (s) { return { s: s, cancer: 1 }; }))
+    .sort(function (a, b) { return b.s - a.s; });          // walk scores from high to low
+  var finals = document.getElementById('auc-final');
+  var status = document.getElementById('auc-status');
+  var X0 = 34, XW = 148, Y0 = 158, YH = 106;               // chart geometry in the SVG viewBox
+  function px(fpr) { return (X0 + XW * fpr).toFixed(1); }
+  function py(tpr) { return (Y0 - YH * tpr).toFixed(1); }
+  var SWEEP = 8000, HOLD = 4000;                           // sweep 1→0, then hold the finished curve
+  var elapsed = 0, prev = null, playing = true, lastKey = '', shown = null;
+  function frame(ts) {
+    if (prev === null) prev = ts;
+    if (playing) elapsed += ts - prev;                     // pause freezes the sweep in place
+    prev = ts;
+    var cycle = elapsed % (SWEEP + HOLD);
+    var t = cycle >= SWEEP ? 0 : 1 - cycle / SWEEP;        // sweep 1 → 0, then rest at 0
+    var done = t < 0.05;                                   // below the lowest score: curve complete
+    if (finals && done !== shown) { shown = done; finals.setAttribute('opacity', done ? '1' : '0'); }
+    var tp = 0, fp = 0, pts = [[0, 0]];
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].s < t) break;                             // scores at or above t are called positive
+      if (all[i].cancer) tp++; else fp++;
+      pts.push([fp / non.length, tp / can.length]);
+    }
+    var key = pts.length + ':' + t.toFixed(3);
+    if (key !== lastKey) {
+      lastKey = key;
+      var str = pts.map(function (p) { return px(p[0]) + ',' + py(p[1]); }).join(' ');
+      var last = pts[pts.length - 1];
+      path.setAttribute('points', str);
+      fill.setAttribute('points', str + ' ' + px(last[0]) + ',' + Y0 + ' ' + X0 + ',' + Y0);
+      dot.setAttribute('cx', px(last[0])); dot.setAttribute('cy', py(last[1]));
+      if (thr) { var x = (X0 + XW * t).toFixed(1); thr.setAttribute('x1', x); thr.setAttribute('x2', x); }
+      if (status) {
+        status.innerHTML = done
+          ? 'Every threshold plotted. This curve is the model&rsquo;s full performance.'
+          : 'threshold <b>' + t.toFixed(2) + '</b> &nbsp;&middot;&nbsp; cancers caught <b>' + tp + ' of 4</b> &nbsp;&middot;&nbsp; healthy flagged <b>' + fp + ' of 6</b>';
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  if (toggle) toggle.addEventListener('click', function () {
+    playing = !playing;
+    toggle.textContent = playing ? '⏸ Pause' : '▶ Play';
+    toggle.setAttribute('aria-pressed', String(!playing));
+  });
   requestAnimationFrame(frame);
 })();
 </script>
