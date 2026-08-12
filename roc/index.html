@@ -468,7 +468,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         </svg>
       </div>
       <div class="slide-eyebrow">Step 1 of 7</div>
-      <h2>From each image to a risk score</h2>
+      <h2>Map each image to a risk score</h2>
       <p>
         To understand the mistakes AI models make, we first need to understand how AI works. The nature of
         AI is to predict a <b>risk score</b> based on the raw input data. Using forward propagation, as we
@@ -477,7 +477,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
       </p>
       <figure class="pipeline-fig">
         <img src="pipeline.png" alt="The evaluation pipeline: a mammogram goes into the AI model, which outputs a prediction score between 0 and 1; a threshold turns it into cancer or no cancer, then comparison with the ground truth gives True Positive, False Negative, False Positive, or True Negative">
-        <figcaption>The AI's screening pipeline, from image to result.</figcaption>
+        <figcaption>The AI's screening pipeline: it maps each image to a result.</figcaption>
       </figure>
       <p>
         Now we have 10 images: <b>6 are from patients without cancer, and 4 are from patients with
@@ -527,22 +527,23 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
     <!-- Slide 4 · Step 3 — the two types of mistakes (NEW) -->
     <section class="slide" data-i="4">
       <div class="slide-fig">
-        <svg viewBox="0 0 240 132" role="img" aria-label="A false positive is a healthy patient above the threshold; a false negative is a cancer patient below it">
-          <text x="66"  y="12" font-size="8" fill="#8e44ad" text-anchor="middle">predict −</text>
-          <text x="184" y="12" font-size="8" fill="#27ae60" text-anchor="middle">predict +</text>
-          <line x1="132" y1="16" x2="132" y2="104" stroke="#2e86c1" stroke-width="3" stroke-linecap="round"/>
-          <!-- healthy row (gray): mostly correct, one false alarm to the right -->
-          <circle cx="40" cy="44" r="8" fill="#5a6a7e"/><circle cx="64" cy="44" r="8" fill="#5a6a7e"/>
-          <circle cx="88" cy="44" r="8" fill="#5a6a7e"/><circle cx="112" cy="44" r="8" fill="#5a6a7e"/>
-          <circle cx="176" cy="44" r="8" fill="#5a6a7e" stroke="#e74c3c" stroke-width="2.5"/>
-          <text x="176" y="28" font-size="7" fill="#e74c3c" text-anchor="middle">false alarm</text>
-          <text x="176" y="66" font-size="6.5" fill="#e74c3c" text-anchor="middle">FP</text>
-          <!-- cancer row (red): mostly correct, one missed to the left -->
-          <circle cx="60" cy="90" r="8" fill="#d94040" stroke="#e67e22" stroke-width="2.5"/>
-          <text x="60" y="112" font-size="7" fill="#e67e22" text-anchor="middle">missed cancer</text>
-          <text x="60" y="122" font-size="6.5" fill="#e67e22" text-anchor="middle">FN</text>
-          <circle cx="156" cy="90" r="8" fill="#d94040"/><circle cx="180" cy="90" r="8" fill="#d94040"/>
-          <circle cx="204" cy="90" r="8" fill="#d94040"/>
+        <svg viewBox="0 0 240 104" role="img" aria-label="The same threshold picture as the last page: one patient without cancer sits above the threshold, the false alarm, and one cancer patient sits below it, the missed cancer">
+          <rect x="18" y="8" width="128" height="66" fill="rgba(142,68,173,.06)"/>
+          <rect x="146" y="8" width="78" height="66" fill="rgba(39,174,96,.09)"/>
+          <text x="82" y="20" font-size="8.5" fill="#8e44ad" text-anchor="middle">predict −</text>
+          <text x="185" y="20" font-size="8.5" fill="#27ae60" text-anchor="middle">predict +</text>
+          <circle cx="28.3" cy="34" r="8" fill="#5a6a7e"/><circle cx="48.9" cy="34" r="8" fill="#5a6a7e"/>
+          <circle cx="75.7" cy="34" r="8" fill="#5a6a7e"/><circle cx="116.9" cy="34" r="8" fill="#5a6a7e"/>
+          <circle cx="131.3" cy="34" r="8" fill="#5a6a7e"/>
+          <circle cx="172.5" cy="34" r="8" fill="#5a6a7e" stroke="#e74c3c" stroke-width="2.5"/>
+          <text x="172.5" y="49.5" font-size="7" font-weight="700" fill="#e74c3c" text-anchor="middle">FP</text>
+          <circle cx="94.2" cy="56" r="8" fill="#d94040" stroke="#e67e22" stroke-width="2.5"/>
+          <text x="94.2" y="71.5" font-size="7" font-weight="700" fill="#e67e22" text-anchor="middle">FN</text>
+          <circle cx="158.1" cy="56" r="8" fill="#d94040"/><circle cx="195.2" cy="56" r="8" fill="#d94040"/>
+          <circle cx="213.7" cy="56" r="8" fill="#d94040"/>
+          <line x1="18" y1="74" x2="224" y2="74" stroke="#1b2a4a" stroke-width="1.5"/>
+          <line x1="146" y1="6" x2="146" y2="80" stroke="#2e86c1" stroke-width="4" stroke-linecap="round"/>
+          <text x="146" y="101" font-size="8.5" fill="#2e86c1" text-anchor="middle">threshold</text>
         </svg>
       </div>
       <div class="slide-eyebrow">Step 3 of 7</div>
@@ -603,7 +604,8 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         Now count what the threshold did. At a threshold of 0.5, 4 patients without cancer are correctly
         called clear, 2 are false alarms, 3 cancers are caught, and 1 is missed. Arrange those four counts in
         a two-by-two table and you have the <b>confusion matrix</b>: the figure on the left converts to the
-        matrix on the right. One threshold, four numbers that account for every patient.
+        matrix on the right. The confusion matrix is what people use to evaluate a model's performance: one
+        threshold, four numbers that account for every patient.
       </p>
     </section>
 
@@ -649,25 +651,27 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         miss is the mistake that can cost a life.
       </p>
       <div class="slide-fig" style="margin:6px 0 0">
-        <svg viewBox="0 0 240 160" style="max-width:280px" role="img" aria-label="A high threshold gives fewer false alarms but more missed cancers; a low threshold does the reverse">
+        <svg viewBox="0 0 240 156" style="max-width:280px" role="img" aria-label="The same ten patients with a high threshold, which gives fewer false alarms but more missed cancers, and with a low threshold, which does the reverse">
           <!-- High threshold row -->
-          <text x="6" y="20" font-size="8" font-weight="700" fill="#1b2a4a">High threshold</text>
-          <line x1="24" y1="50" x2="226" y2="50" stroke="#1b2a4a" stroke-width="1.2"/>
-          <circle cx="42" cy="42" r="6" fill="#5a6a7e"/><circle cx="64" cy="42" r="6" fill="#5a6a7e"/>
-          <circle cx="86" cy="42" r="6" fill="#5a6a7e"/><circle cx="108" cy="42" r="6" fill="#5a6a7e"/>
-          <circle cx="122" cy="58" r="6" fill="#d94040"/><circle cx="150" cy="58" r="6" fill="#d94040"/>
-          <circle cx="176" cy="58" r="6" fill="#d94040"/><circle cx="202" cy="58" r="6" fill="#d94040"/>
-          <line x1="188" y1="34" x2="188" y2="66" stroke="#2e86c1" stroke-width="3" stroke-linecap="round"/>
-          <text x="118" y="78" font-size="7" fill="#4a4a5a" text-anchor="middle">fewer Type 1, more Type 2</text>
+          <text x="18" y="12" font-size="8" font-weight="700" fill="#1b2a4a">High threshold</text>
+          <circle cx="28.3" cy="28" r="6" fill="#5a6a7e"/><circle cx="48.9" cy="28" r="6" fill="#5a6a7e"/>
+          <circle cx="75.7" cy="28" r="6" fill="#5a6a7e"/><circle cx="116.9" cy="28" r="6" fill="#5a6a7e"/>
+          <circle cx="131.3" cy="28" r="6" fill="#5a6a7e"/><circle cx="172.5" cy="28" r="6" fill="#5a6a7e"/>
+          <circle cx="94.2" cy="44" r="6" fill="#d94040"/><circle cx="158.1" cy="44" r="6" fill="#d94040"/>
+          <circle cx="195.2" cy="44" r="6" fill="#d94040"/><circle cx="213.7" cy="44" r="6" fill="#d94040"/>
+          <line x1="18" y1="56" x2="224" y2="56" stroke="#1b2a4a" stroke-width="1.2"/>
+          <line x1="182.8" y1="20" x2="182.8" y2="62" stroke="#2e86c1" stroke-width="3" stroke-linecap="round"/>
+          <text x="121" y="72" font-size="7" fill="#4a4a5a" text-anchor="middle">fewer Type 1, more Type 2</text>
           <!-- Low threshold row -->
-          <text x="6" y="104" font-size="8" font-weight="700" fill="#1b2a4a">Low threshold</text>
-          <line x1="24" y1="126" x2="226" y2="126" stroke="#1b2a4a" stroke-width="1.2"/>
-          <circle cx="42" cy="118" r="6" fill="#5a6a7e"/><circle cx="64" cy="118" r="6" fill="#5a6a7e"/>
-          <circle cx="86" cy="118" r="6" fill="#5a6a7e"/><circle cx="108" cy="118" r="6" fill="#5a6a7e"/>
-          <circle cx="122" cy="134" r="6" fill="#d94040"/><circle cx="150" cy="134" r="6" fill="#d94040"/>
-          <circle cx="176" cy="134" r="6" fill="#d94040"/><circle cx="202" cy="134" r="6" fill="#d94040"/>
-          <line x1="72" y1="110" x2="72" y2="142" stroke="#2e86c1" stroke-width="3" stroke-linecap="round"/>
-          <text x="130" y="154" font-size="7" fill="#4a4a5a" text-anchor="middle">more Type 1, fewer Type 2</text>
+          <text x="18" y="96" font-size="8" font-weight="700" fill="#1b2a4a">Low threshold</text>
+          <circle cx="28.3" cy="112" r="6" fill="#5a6a7e"/><circle cx="48.9" cy="112" r="6" fill="#5a6a7e"/>
+          <circle cx="75.7" cy="112" r="6" fill="#5a6a7e"/><circle cx="116.9" cy="112" r="6" fill="#5a6a7e"/>
+          <circle cx="131.3" cy="112" r="6" fill="#5a6a7e"/><circle cx="172.5" cy="112" r="6" fill="#5a6a7e"/>
+          <circle cx="94.2" cy="128" r="6" fill="#d94040"/><circle cx="158.1" cy="128" r="6" fill="#d94040"/>
+          <circle cx="195.2" cy="128" r="6" fill="#d94040"/><circle cx="213.7" cy="128" r="6" fill="#d94040"/>
+          <line x1="18" y1="140" x2="224" y2="140" stroke="#1b2a4a" stroke-width="1.2"/>
+          <line x1="69.5" y1="104" x2="69.5" y2="146" stroke="#2e86c1" stroke-width="3" stroke-linecap="round"/>
+          <text x="121" y="155" font-size="7" fill="#4a4a5a" text-anchor="middle">more Type 1, fewer Type 2</text>
         </svg>
       </div>
     </section>
@@ -1520,14 +1524,16 @@ function drawModelCard(model) {
   if (!c) return;
   const dpr = window.devicePixelRatio || 1;
   const rect = c.getBoundingClientRect();
-  const pw=Math.round(rect.width*dpr), ph=Math.round(rect.height*dpr);
+  const SPLIT=72;
+  // Keep the ROC panel square: the card grows taller instead of squashing the curve.
+  const wantH = Math.round(SPLIT + 8 + (rect.width - 24 - 8) + 14);
+  if (Math.round(rect.height) !== wantH) c.style.height = wantH + 'px';
+  const pw=Math.round(rect.width*dpr), ph=Math.round(wantH*dpr);
   if (c.width!==pw||c.height!==ph){c.width=pw;c.height=ph;}
   const ctx=c.getContext('2d');
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  const w=rect.width, h=rect.height;
+  const w=rect.width, h=wantH;
   ctx.clearRect(0,0,w,h);
-
-  const SPLIT=72;
   const ncPts=model.nc, cancerPts=model.cancer;
 
   // ── Patient strip (top SPLIT px) ──
