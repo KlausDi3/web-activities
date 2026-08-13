@@ -55,6 +55,36 @@ html, body {
 }
 .page-title em { font-style: normal; color: inherit; }
 
+/* ── About-this-exercise card ── */
+.about-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  margin-bottom: 12px;
+  padding: 2px 22px;
+}
+.about-card summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 11px 0;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+.about-card summary::-webkit-details-marker { display: none; }
+.about-card summary:hover { color: var(--blue); }
+.about-card summary:hover .about-hint { color: var(--blue); }
+.about-card summary::before { content: '▸'; color: var(--blue); font-size: .8rem; transition: transform .15s; }
+.about-card[open] summary::before { transform: rotate(90deg); }
+.about-hint { margin-left: auto; font-weight: 400; font-size: .68rem; letter-spacing: .02em; text-transform: none; color: var(--gray); }
+.about-intro { font-size: .86rem; color: var(--gray); line-height: 1.55; max-width: 1080px; padding-bottom: 8px; }
+.about-controls { padding-bottom: 8px; border-top: 1px solid var(--mid); }
+
 /* ── Slider card ── */
 .slider-card {
   background: #fff;
@@ -346,8 +376,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .auc-status b { color: var(--navy); }
 .auc-caption { font-size: .8rem; font-weight: 700; color: var(--navy); margin: 4px auto 0; text-align: center; }
 
-/* Controls legend (last slide) */
-.guide-controls { max-width: 640px; margin: 4px auto 0; background: #fff; border-radius: 12px; padding: 16px 24px; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+/* Controls legend (About-this-exercise card) */
 .guide-ctrl-row { display: flex; gap: 14px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--mid); text-align: left; }
 .guide-ctrl-row:last-child { border-bottom: none; }
 .guide-ctrl-key { flex-shrink: 0; width: 156px; font-weight: 700; font-size: .84rem; color: var(--navy); }
@@ -565,14 +594,18 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
     <!-- Slide 5 · Step 4 — the confusion matrix -->
     <section class="slide" data-i="5">
       <div class="slide-fig">
-        <svg viewBox="0 0 470 140" style="max-width:640px" role="img" aria-label="The ten scored patients with a threshold at 0.5 convert into a confusion matrix: 4 true negatives, 2 false positives, 1 false negative, 3 true positives">
-          <!-- left: the 10 patients at threshold 0.5 -->
+        <svg viewBox="0 0 470 140" style="max-width:640px" role="img" aria-label="The ten scored patients with a threshold at 0.5, each colored by the confusion-matrix cell it lands in, convert into a confusion matrix: 4 true negatives, 2 false positives, 1 false negative, 3 true positives">
+          <!-- left: the 10 patients at threshold 0.5, quadrants tinted to match the matrix cells -->
+          <rect x="14"  y="52" width="86" height="28" fill="rgba(142,68,173,.08)"/>
+          <rect x="100" y="52" width="86" height="28" fill="rgba(231,76,60,.08)"/>
+          <rect x="14"  y="80" width="86" height="28" fill="rgba(230,126,34,.08)"/>
+          <rect x="100" y="80" width="86" height="28" fill="rgba(39,174,96,.08)"/>
           <line x1="14" y1="80" x2="186" y2="80" stroke="#1b2a4a" stroke-width="1.2"/>
-          <circle cx="22.6" cy="66" r="5" fill="#5a6a7e"/><circle cx="39.8" cy="66" r="5" fill="#5a6a7e"/>
-          <circle cx="62.2" cy="66" r="5" fill="#5a6a7e"/><circle cx="96.6" cy="66" r="5" fill="#5a6a7e"/>
-          <circle cx="108.6" cy="66" r="5" fill="#5a6a7e"/><circle cx="143" cy="66" r="5" fill="#5a6a7e"/>
-          <circle cx="77.6" cy="94" r="5" fill="#d94040"/><circle cx="131" cy="94" r="5" fill="#d94040"/>
-          <circle cx="161.9" cy="94" r="5" fill="#d94040"/><circle cx="177.4" cy="94" r="5" fill="#d94040"/>
+          <circle cx="22.6" cy="66" r="5" fill="#8e44ad"/><circle cx="39.8" cy="66" r="5" fill="#8e44ad"/>
+          <circle cx="62.2" cy="66" r="5" fill="#8e44ad"/><circle cx="96.6" cy="66" r="5" fill="#8e44ad"/>
+          <circle cx="108.6" cy="66" r="5" fill="#e74c3c"/><circle cx="143" cy="66" r="5" fill="#e74c3c"/>
+          <circle cx="77.6" cy="94" r="5" fill="#e67e22"/><circle cx="131" cy="94" r="5" fill="#27ae60"/>
+          <circle cx="161.9" cy="94" r="5" fill="#27ae60"/><circle cx="177.4" cy="94" r="5" fill="#27ae60"/>
           <line x1="100" y1="52" x2="100" y2="108" stroke="#2e86c1" stroke-width="3" stroke-linecap="round"/>
           <text x="100" y="122" font-size="7.5" fill="#2e86c1" text-anchor="middle">threshold 0.5</text>
           <!-- middle: the conversion arrow -->
@@ -585,16 +618,16 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
           <text x="292" y="52"  font-size="7.5" fill="#4a4a5a" text-anchor="end">Actual −</text>
           <text x="292" y="102" font-size="7.5" fill="#4a4a5a" text-anchor="end">Actual +</text>
           <rect x="296" y="28" width="76" height="44" rx="6" fill="rgba(142,68,173,.10)"/>
-          <text x="334" y="47" font-size="11" font-weight="700" fill="#8e44ad" text-anchor="middle">TN · 4</text>
+          <text x="334" y="47" font-size="8" font-weight="700" fill="#8e44ad" text-anchor="middle">True Negative = 4</text>
           <text x="334" y="61" font-size="7" fill="#8e44ad" text-anchor="middle">correct clear</text>
           <rect x="378" y="28" width="76" height="44" rx="6" fill="rgba(231,76,60,.10)"/>
-          <text x="416" y="47" font-size="11" font-weight="700" fill="#e74c3c" text-anchor="middle">FP · 2</text>
+          <text x="416" y="47" font-size="8" font-weight="700" fill="#e74c3c" text-anchor="middle">False Positive = 2</text>
           <text x="416" y="61" font-size="7" fill="#e74c3c" text-anchor="middle">false alarm</text>
           <rect x="296" y="78" width="76" height="44" rx="6" fill="rgba(230,126,34,.10)"/>
-          <text x="334" y="97" font-size="11" font-weight="700" fill="#e67e22" text-anchor="middle">FN · 1</text>
+          <text x="334" y="97" font-size="8" font-weight="700" fill="#e67e22" text-anchor="middle">False Negative = 1</text>
           <text x="334" y="111" font-size="7" fill="#e67e22" text-anchor="middle">cancer missed</text>
           <rect x="378" y="78" width="76" height="44" rx="6" fill="rgba(39,174,96,.12)"/>
-          <text x="416" y="97" font-size="11" font-weight="700" fill="#27ae60" text-anchor="middle">TP · 3</text>
+          <text x="416" y="97" font-size="8" font-weight="700" fill="#27ae60" text-anchor="middle">True Positive = 3</text>
           <text x="416" y="111" font-size="7" fill="#27ae60" text-anchor="middle">correct catch</text>
         </svg>
       </div>
@@ -622,18 +655,18 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
           <text x="2" y="96" font-size="8" fill="#4a4a5a">Actual</text>
           <text x="2" y="105" font-size="8" fill="#4a4a5a">Positive</text>
           <rect x="58"  y="20" width="80" height="48" rx="6" fill="rgba(142,68,173,.10)"/>
-          <text x="98" y="42" font-size="12" font-weight="700" fill="#8e44ad" text-anchor="middle">TN</text>
+          <text x="98" y="42" font-size="9" font-weight="700" fill="#8e44ad" text-anchor="middle">True Negative</text>
           <text x="98" y="57" font-size="8" fill="#8e44ad" text-anchor="middle">correct clear</text>
           <rect x="146" y="20" width="80" height="48" rx="6" fill="rgba(231,76,60,.10)"/>
-          <text x="186" y="40" font-size="12" font-weight="700" fill="#e74c3c" text-anchor="middle">FP</text>
+          <text x="186" y="40" font-size="9" font-weight="700" fill="#e74c3c" text-anchor="middle">False Positive</text>
           <text x="186" y="53" font-size="8" font-weight="700" fill="#e74c3c" text-anchor="middle">Type 1 error</text>
           <text x="186" y="63" font-size="7" fill="#e74c3c" text-anchor="middle">false alarm</text>
           <rect x="58"  y="74" width="80" height="48" rx="6" fill="rgba(230,126,34,.10)"/>
-          <text x="98" y="94" font-size="12" font-weight="700" fill="#e67e22" text-anchor="middle">FN</text>
+          <text x="98" y="94" font-size="9" font-weight="700" fill="#e67e22" text-anchor="middle">False Negative</text>
           <text x="98" y="107" font-size="8" font-weight="700" fill="#e67e22" text-anchor="middle">Type 2 error</text>
           <text x="98" y="117" font-size="7" fill="#e67e22" text-anchor="middle">missed cancer</text>
           <rect x="146" y="74" width="80" height="48" rx="6" fill="rgba(39,174,96,.12)"/>
-          <text x="186" y="96" font-size="12" font-weight="700" fill="#27ae60" text-anchor="middle">TP</text>
+          <text x="186" y="96" font-size="9" font-weight="700" fill="#27ae60" text-anchor="middle">True Positive</text>
           <text x="186" y="111" font-size="8" fill="#27ae60" text-anchor="middle">correct catch</text>
         </svg>
       </div>
@@ -699,10 +732,10 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
           <text x="240" y="74" font-size="7" fill="#8899aa" text-anchor="middle">1</text>
         </svg>
         <div class="ra-matrix">
-          <div class="ra-cell tn"><span>True Neg</span><b id="ra-tn">4</b></div>
-          <div class="ra-cell fp"><span>False Pos</span><b id="ra-fp">2</b></div>
-          <div class="ra-cell fn"><span>False Neg</span><b id="ra-fn">1</b></div>
-          <div class="ra-cell tp"><span>True Pos</span><b id="ra-tp">3</b></div>
+          <div class="ra-cell tn"><span>True Negative</span><b id="ra-tn">4</b></div>
+          <div class="ra-cell fp"><span>False Positive</span><b id="ra-fp">2</b></div>
+          <div class="ra-cell fn"><span>False Negative</span><b id="ra-fn">1</b></div>
+          <div class="ra-cell tp"><span>True Positive</span><b id="ra-tp">3</b></div>
         </div>
         <button class="ra-toggle" id="ra-toggle" type="button" aria-pressed="false">⏸ Pause</button>
       </div>
@@ -839,30 +872,14 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
     <!-- Slide 9 · How to use -->
     <section class="slide" data-i="9">
-      <div class="slide-eyebrow">You're ready</div>
-      <h2>Using this page</h2>
-      <div class="guide-controls">
-        <div class="guide-ctrl-row">
-          <div class="guide-ctrl-key">Blue threshold line</div>
-          <div class="guide-ctrl-desc">Drag the blue line on the patient strip. The four matrix counts and the orange dot update as you move it.</div>
-        </div>
-        <div class="guide-ctrl-row">
-          <div class="guide-ctrl-key">▶ Animate</div>
-          <div class="guide-ctrl-desc">Sweeps the threshold from high to low so you can watch the ROC curve build point by point.</div>
-        </div>
-        <div class="guide-ctrl-row">
-          <div class="guide-ctrl-key">↺ Reset</div>
-          <div class="guide-ctrl-desc">Returns the threshold to 0.50 and reloads the 10-patient case study.</div>
-        </div>
-        <div class="guide-ctrl-row">
-          <div class="guide-ctrl-key">Orange dot</div>
-          <div class="guide-ctrl-desc">Marks where your current threshold sits on the ROC curve.</div>
-        </div>
-        <div class="guide-ctrl-row">
-          <div class="guide-ctrl-key">Bottom three charts</div>
-          <div class="guide-ctrl-desc">Click any of the three models to load its data into the charts above and compare. Use "Back to case study" to return to the 10-patient example.</div>
-        </div>
-      </div>
+      <div class="slide-eyebrow">Walkthrough complete</div>
+      <h2>You're ready for the hands-on exercise</h2>
+      <p style="max-width:640px">
+        Everything you just walked through — risk scores, the threshold, the confusion matrix, and the
+        ROC curve — is live on one screen behind this walkthrough. The <b>“About this exercise”</b>
+        panel at the top of that page explains the goal and what each control does, so you can start
+        exploring right away.
+      </p>
       <p style="margin-top:16px;font-size:.85rem;">Reopen this walkthrough anytime with “How to use this page” in the top bar.</p>
     </section>
 
@@ -892,6 +909,39 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
   <div class="page-header">
     <h1 class="page-title">The ROC Curve &amp; Classification Metrics</h1>
   </div>
+
+  <!-- About this exercise (instructions from the walkthrough live here) -->
+  <details class="about-card" id="about-exercise" open>
+    <summary>About this exercise<span class="about-hint">click to collapse / expand</span></summary>
+    <p class="about-intro">
+      This page puts everything from the walkthrough on one live screen. Drag the threshold across the
+      10-patient case study and watch the confusion matrix, the metric formulas, and the ROC operating
+      point respond together — then load the three models at the bottom (good, better, perfect) to see
+      how model quality shows up in the ROC curve and the AUC.
+    </p>
+    <div class="about-controls">
+      <div class="guide-ctrl-row">
+        <div class="guide-ctrl-key">Blue threshold line</div>
+        <div class="guide-ctrl-desc">Drag the blue line on the patient strip. The four matrix counts and the orange dot update as you move it.</div>
+      </div>
+      <div class="guide-ctrl-row">
+        <div class="guide-ctrl-key">▶ Animate</div>
+        <div class="guide-ctrl-desc">Sweeps the threshold from high to low so you can watch the ROC curve build point by point.</div>
+      </div>
+      <div class="guide-ctrl-row">
+        <div class="guide-ctrl-key">↺ Reset</div>
+        <div class="guide-ctrl-desc">Returns the threshold to 0.50 and reloads the 10-patient case study.</div>
+      </div>
+      <div class="guide-ctrl-row">
+        <div class="guide-ctrl-key">Orange dot</div>
+        <div class="guide-ctrl-desc">Marks where your current threshold sits on the ROC curve.</div>
+      </div>
+      <div class="guide-ctrl-row">
+        <div class="guide-ctrl-key">Bottom three charts</div>
+        <div class="guide-ctrl-desc">Click any of the three models to load its data into the charts above and compare. Use "Back to case study" to return to the 10-patient example.</div>
+      </div>
+    </div>
+  </details>
 
   <!-- Controls row -->
   <div class="slider-card">
