@@ -397,6 +397,14 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .nav-next:disabled { opacity: .45; cursor: not-allowed; }
 .nav-back { background: #fff; color: var(--navy); border: 1.5px solid var(--mid); }
 .nav-back:disabled { opacity: .35; cursor: not-allowed; }
+/* Centered CTA on the last slide */
+.guide-start-btn {
+  display: block; margin: 26px auto 0; border: none; border-radius: 10px; cursor: pointer;
+  background: var(--blue); color: #fff; font-family: var(--sans); font-weight: 700;
+  font-size: 1.05rem; letter-spacing: .02em; padding: 15px 36px;
+  box-shadow: 0 2px 10px rgba(46,134,193,.35); transition: opacity .15s, transform .1s;
+}
+.guide-start-btn:hover { opacity: .92; transform: translateY(-1px); }
 .guide-progress { display: flex; flex-direction: column; align-items: center; gap: 7px; }
 .guide-dots { display: flex; gap: 8px; align-items: center; }
 .dot-i { width: 8px; height: 8px; border-radius: 50%; background: var(--mid); cursor: pointer; transition: background .15s, transform .15s; }
@@ -881,6 +889,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         exploring right away.
       </p>
       <p style="margin-top:16px;font-size:.85rem;">Reopen this walkthrough anytime with “How to use this page” in the top bar.</p>
+      <button class="guide-start-btn" id="guide-start-btn" type="button">Start the exercise →</button>
     </section>
 
   </div>
@@ -1826,18 +1835,21 @@ requestAnimationFrame(() => initDraw(0));
     dots.forEach(function (d, i) { d.classList.toggle('on', i === idx); });
     label.textContent = (idx + 1) + ' / ' + N;
     back.disabled = idx === 0;
+    // On the last slide the centered "Start the exercise" button is the CTA.
+    next.style.visibility = (idx === N - 1) ? 'hidden' : 'visible';
     if (idx === 0 && !window.__quizSolved) {
       next.disabled = true;
       next.textContent = 'Answer to continue';
     } else {
       next.disabled = false;
-      next.textContent = (idx === N - 1) ? 'Start the activity →' : 'Next ▸';
+      next.textContent = 'Next ▸';
     }
     stage.scrollTop = 0;
   }
 
   back.addEventListener('click', function () { go(currentIndex() - 1); });
   next.addEventListener('click', function () { go(currentIndex() + 1); });
+  document.getElementById('guide-start-btn').addEventListener('click', function () { location.hash = 'start'; });
   document.getElementById('guide-skip').addEventListener('click', function () { location.hash = 'start'; });
   document.getElementById('help-btn').addEventListener('click', function () { location.hash = 's1'; });
 
